@@ -12,22 +12,28 @@ $config.Run.Exit = $true
 Invoke-Pester -Configuration $config
 ```
 
-## Öffentliche API
+## Erste Incident-Seite suchen
 
-Dieses Beispiel zeigt die Aufruffolge und die Parameter, nicht einen ausgeführten Live-Test. Nur mit ausdrücklicher Freigabe und vorgesehenen Testtickets verwenden. Die beispielhaften numerischen IDs durch die internen Kennungen des freigegebenen Tests ersetzen. Die Suchtreffer liefern nicht zwingend eine interne Ticket-ID.
+Nur mit ausdrücklicher Freigabe und vorgesehenen Testtickets verwenden. Die Aufruffolge wurde mit gemocktem Transport geprüft, nicht live. Lege vorher `config.local.json` nach [der Vorlage](../config.example.json) mit der freigegebenen HTTPS-Basis an.
 
 ```powershell
-Import-Module ./src/UHDServiceDesk/UHDServiceDesk.psd1
+Import-Module ./src/UHDServiceDesk/UHDServiceDesk.psd1 -Force
 $credential = Get-Credential -Message 'Anmeldung am Testsystem'
 Connect-UHD -ConfigPath ./config.local.json -Credential $credential -ErrorAction Stop
 
 try {
-    Find-UHDTicket -GroupMemberId '17', '29'
-    Get-UHDTicket -Id 42
+    Find-UHDTicket -AllActiveIncidents |
+        Format-Table Id, RefNum, Status, Summary, Group, GroupId -AutoSize
+
+    $memberId = Read-Host 'Mitgliedskennung (32 Hex-Zeichen ohne Bindestriche)'
+    Find-UHDTicket -GroupMemberId $memberId |
+        Format-Table Id, RefNum, Status, Summary, Group, GroupId -AutoSize
 }
 finally {
     Disconnect-UHD
 }
 ```
 
-`config.local.json` muss vorab nach [der Vorlage](../config.example.json) mit der freigegebenen HTTPS-Basis angelegt werden. `Get-UHDTicket -Id` erwartet die interne Ticket-ID, nicht die sichtbare Ticketnummer (`RefNum`). Die Aufruffolge ist im Offline-Test oben mit gemocktem Transport abgedeckt.
+`-AllActiveIncidents` zeigt die erste Seite aktiver Incidents ohne Gruppenfilter und ohne Vorlagen. `-GroupMemberId` zeigt die erste Seite aktiver Incidents aus den Gruppen der angegebenen Mitgliedschaft, außer den Status `EXTERL` und `EXTABG`. Die Mitgliedskennung steht in einer bestehenden Browser-Suchanfrage im Filter `group_list.member`: Gib nur die Hex-Zeichen ein, ohne das umgebende `U'…'`. `GroupId` in der Ausgabe bezeichnet dagegen die Gruppe des Tickets. Ein Filter nach genau einer Gruppe, weitere Seiten und eine Suche nach allen Tickets werden noch nicht unterstützt.
+
+Für einen Detailabruf erwartet `Get-UHDTicket -Id` den Wert aus der Spalte `Id`, nicht die sichtbare Ticketnummer `RefNum`. Der Detailparser wurde nur mit synthetischen Antworten geprüft.

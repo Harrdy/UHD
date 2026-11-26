@@ -34,6 +34,6 @@ function Get-UHDTicket {
     if ($Children) {
         throw 'Das Antwortformat der Unterticketliste ist noch offen; die Liste konnte nicht ausgewertet werden.'
     }
-    $ticket = ConvertFrom-UHDTicketResponse -Content ([string]$response.Content) -Layout Detail
+    $ticket = ConvertFrom-UHDTicketResponse -Content ([string]$response.Content)
     $ticket | Add-Member -NotePropertyName RequestedId -NotePropertyValue $Id -PassThru
 }

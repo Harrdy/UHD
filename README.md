@@ -2,18 +2,21 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.2.0.** Anmeldung, Ticketsuche, Detailabruf und Abmeldung wurden als zusammenhängender Ablauf offline mit synthetischen Antworten geprüft. Es gibt keine Live-Verifikation.
+**Stand: Phase 2, Proof of Concept 0.3.0.** Die Ticketsuche liest das beobachtete Browser-Antwortformat. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Anmeldung, Suche, Detailabruf und Abmeldung wurden außerdem als Ablauf mit synthetischen Antworten geprüft; für den Detailparser bleibt es bei dieser synthetischen Prüfung. Es gibt keine Live-Verifikation.
 
 | Cmdlet | Stand |
 |---|---|
 | `Connect-UHD`, `Disconnect-UHD` | Formularanmeldung und Sitzungsende; optionaler Menü-Logout |
-| `Find-UHDTicket -GroupMemberId` | Suche nach numerischen Gruppenmitglieds-IDs; nur erste Seite, kein Freitextfilter |
+| `Find-UHDTicket -AllActiveIncidents` | Erste Seite aktiver Incidents ohne Gruppenfilter und ohne Vorlagen; keine Suche nach allen Tickets |
+| `Find-UHDTicket -GroupMemberId` | Erste Seite aktiver Incidents für eine Gruppenmitgliedschaft; erwartet genau eine Kennung mit 32 Hex-Zeichen ohne Bindestriche |
 | `Get-UHDTicket -Id` | Liest unterstützte Detailantworten zu einer internen numerischen Ticket-ID |
 | `Get-UHDStatus -Id -Status` | Liest einen Statusübergang, wenn die Antwort aus genau einem `CODE@Bezeichnung`-Eintrag besteht |
 | `Get-UHDTicket -Children`, `Get-UHDTicketAttachment` | Die dokumentierten Requests sind implementiert. Das Antwortformat ist offen; die Cmdlets melden einen Fehler statt einer leeren Liste. Kein Download. |
 | Änderung, Abschluss, Kommentar, Upload, Benutzer-/Gruppensuche und Kataloge | Nicht verfügbar. Insbesondere senden `New-UHDTicket` und `Set-UHDTicket` keine Requests. |
 
 Die [Endpunktmatrix](docs/endpoints.md) unterscheidet zwischen getestetem Request-Aufbau, ausgewerteten Antwortformaten und offenen Protokolldetails. [Beispiele](examples/README.md) zeigen den Offline-Test und die öffentliche API.
+
+Suchtreffer geben die interne Ticket-ID als `Id` und, falls vorhanden, die Gruppen-ID als `GroupId` aus. `GroupId` ist nicht die Mitgliedskennung für `-GroupMemberId`. Dezimal-IDs und mehrere Kennungen pro Aufruf werden nicht mehr angenommen. Ein Filter nach genau einer Gruppe und Folgeseiten sind noch nicht unterstützt.
 
 ## Voraussetzungen und Konfiguration
 

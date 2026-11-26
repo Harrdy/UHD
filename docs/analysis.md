@@ -1,6 +1,6 @@
 # Analyse der HAR-Aufzeichnungen
 
-Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, Anlegen, Speichern, Statuswechsel, Anhang, Logout, WSDL-Test).
+Stand: 2026-11-26. Die ursprüngliche Auswertung umfasst 10 Aufzeichnungen (Login, Menü, Suche, Detail, Anlegen, Speichern, Statuswechsel, Anhang, Logout, WSDL-Test). Für 0.3.0 wurden die Suchbefunde anhand von drei aufgezeichneten Trefferseiten ergänzt.
 
 ## Bestätigt
 
@@ -15,8 +15,10 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 
 ### Ticketsuche
 - `OP=SEARCH&FACTORY=cr` mit `KEEP.where_clause` (SQL-artige Bedingung).
-- Filter auf Gruppenmitgliedschaft: `group.[group]group_list.member IN (…)`, Ausschluss `EXTERL`/`EXTABG`.
-- Ergebnis: HTML mit eingebettetem JavaScript. Pro Treffer ein `recordData`-Objekt. Eine Seite enthält 50 Treffer.
+- Zwei Filter sind belegt: aktive Incidents ohne Gruppenfilter und ohne Vorlagen sowie aktive Incidents über eine Gruppenmitgliedschaft mit Ausschluss von `EXTERL` und `EXTABG`. Die [Endpunktmatrix](endpoints.md#bestätigte-filtervarianten-für-die-ticketsuche) nennt die genaue Syntax.
+- Der Mitgliedschaftsfilter verwendet genau eine 32-stellige Hex-Kennung ohne Bindestriche. Diese ist nicht die Gruppenkennung; die Gruppe steht in der Trefferliste gesondert in `group.id`.
+- Die Antwort ist HTML mit eingebettetem JavaScript. Feldweise Zuweisungen an `recordData` und ein abschließender Zeilenaufruf bilden jeden Treffer. Der Parser wertet die Daten aus, ohne JavaScript auszuführen. Die interne Ticket-ID stammt aus `persid` und ist nicht die sichtbare Ticketnummer.
+- Die Offline-Auswertung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Sie bestätigt weder eine feste Seitengröße noch das Format einer leeren Liste. Parameter für Folgeseiten und ein Filter nach genau einer Gruppe bleiben offen.
 
 ### Ticketdetails
 - `OP=SHOW_DETAIL&FACTORY=cr&PERSID=cr:<id>`.

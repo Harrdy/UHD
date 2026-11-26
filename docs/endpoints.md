@@ -14,7 +14,7 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 | Menü öffnen | POST | `pdmweb3.exe`: `SID`, `FID`, `OP=MENU`, `POST_MENU=1` | bestätigt | Öffentlich über `Connect-UHD`, [Sitzungstest][session]. |
 | Sitzung beenden (Fenster schließen) | GET | `pdmweb3.exe?SID=…+FID=0+ENDSESSION=1` | bestätigt | Öffentlich: `Disconnect-UHD`, [Sitzungstest][session]. |
 | Abmelden über Menü | GET | `pdmweb.exe?SID=…+FID=…+OP=LOGOUT` | bestätigt, Servlet abweichend | Öffentlich: `Disconnect-UHD -MenuLogout`, [Sitzungstest][session]. |
-| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt | Öffentlich: `Find-UHDTicket -GroupMemberId`; PoC nur mit numerischen IDs und ohne Pagination. JSON-kompatible `recordData`-Zuweisungen; kein belegtes Leerlistenformat. [Lesetest][read]. |
+| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt; zwei Filtervarianten, siehe unten | Öffentlich: `Find-UHDTicket -GroupMemberId` oder `-AllActiveIncidents`. Liest eine Seite im beobachteten `recordData`-Format; keine Pagination und kein belegtes Leerlistenformat. [Lesetest][read]. |
 | Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id`; unterstützt ausgewählte benannte Felder aus dem synthetisch geprüften Formularlayout. [Lesetest][read]. |
 | Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicketAttachment -Id` sendet den Request. Antwortformat offen; keine Liste und kein Download. [Lesetest][read]. |
 | Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id -Children` sendet den Request. Antwortformat offen; keine Liste. [Lesetest][read]. |
@@ -26,11 +26,20 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 | Kontakt laden | GET | `pdmweb3.exe?…+OP=SPEC_HAND+FACTORY=cnt+PERSID=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine Benutzersuche oder öffentliche Rohantwort. [Hilfstest][aux]. |
 | Servicevertrag laden | GET | `pdmweb3.exe?…+OP=GET_SVC_CONTRACT+new_customer=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine öffentliche Antwortauswertung. [Hilfstest][aux]. |
 | Prioritätsberechnung | GET | `pdmweb3.exe?…+OP=GET_PRI_CAL+FACTORY=in` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; keine Prioritätsliste. [Hilfstest][aux]. |
-| Gruppenzuordnung | GET | `pdmweb3.exe?…+OP=GROUP_IN_AGT` / `AGT_IN_GROUP` | bestätigt | Interne Vorlagen für beide `OP`-Werte; keine Requests, da Argumente und Antwortformat offen sind. [Hilfstest][aux]. |
+| Gruppenzuordnung | GET | `pdmweb3.exe?…+OP=GROUP_IN_AGT` / `AGT_IN_GROUP` | bestätigt; `group_id` ist die 32-stellige Hex-Kennung der Gruppe | Interne Vorlagen für beide `OP`-Werte; keine Requests, da der vollständige Vertrag offen ist. [Hilfstest][aux]. |
 | Anhang hochladen | POST multipart | `/CAisd/UploadServlet`, Formular `frmUpload`, Popup | aus JavaScript abgeleitet, Popup-URL nicht einzeln aufrufbar, zurückgestellt | Offen: kein vollständiger Multipart-Request; kein Upload. |
 | Kommentar | offen | offen | offen | Offen: kein belegter Request zum manuellen Anlegen. |
 | Abschluss | offen | offen | offen | Offen: kein belegter Abschluss mit Lösung. |
 | WSDL | GET | `pdmws.exe?WSDL` | **404**, nicht verfügbar | Nicht unterstützt; kein Request im Modul. |
+
+## Bestätigte Filtervarianten für die Ticketsuche
+
+- **Aktive Incidents ohne Gruppenfilter:** `active=1 AND type = 'I' AND template_name is NULL`. Der Filter schließt Vorlagen aus und ist keine Suche nach allen Ticketarten oder inaktiven Tickets.
+- **Gruppenmitgliedschaft:** `(status <> 'EXTERL' AND status <> 'EXTABG') and active=1 AND type = 'I' AND group.[group]group_list.member IN (U'<Kennung>')`. Belegt ist genau eine 32-stellige Hex-Mitgliedskennung ohne Bindestriche; das Modul ergänzt das `U'…'`-Literal selbst. Mehrere Kennungen und Dezimal-IDs sind nicht belegt.
+
+Die Mitgliedskennung steht im Filter `group_list.member` einer bestehenden Browser-Anfrage zur eigenen Ticketliste. Sie ist **nicht** `group_id`; die Gruppenkennung erscheint in der Zuordnungsabfrage und im Bearbeitungsformular unter `SET.group`. Ein Suchfilter für genau eine Gruppenkennung ist nicht belegt. Die Mitgliedersuche kann Treffer aus mehreren Gruppen liefern.
+
+Die beobachtete Trefferliste beginnt jeden Treffer mit `recordData = new Object()`, enthält feldweise Zuweisungen und schließt ihn mit `rs.addRow(…)` ab. Die interne Ticket-ID ist im Feld `persid` als `cr:<ID>` belegt und wird als `Id` ausgegeben. Eine vorhandene Gruppenkennung aus `group.id` wird als `GroupId` ausgegeben, kann aber nicht als Suchfilter verwendet werden. Das Modul liest die Daten, ohne das Skript auszuführen. Eine aufgezeichnete Seite enthielt 50 Treffer; Folgeanfragen und Positivmerkmale für eine leere Antwort bleiben offen.
 
 ## Hinweis zu Speicher-Requests
 Beim Speichern werden alle Formularfelder gesendet. Die URL ist 1,5 KB lang. Beschreibung und Personendaten stehen in der URL. Logs müssen maskieren.
