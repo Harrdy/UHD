@@ -48,5 +48,10 @@ function Find-UHDTicket {
             ($content -match '<html(?=[\s>])'), ($content -match '<script(?=[\s>])'),
             ($content -cmatch '\brecordData\b'), ($content -cmatch '\brs\s*\.\s*addRow\s*\('))
     }
-    ConvertFrom-UHDCapturedSearch -Content $content
+    if ($content -match '<script(?=[\s>])') {
+        ConvertFrom-UHDCapturedSearch -Content $content
+    }
+    else {
+        ConvertFrom-UHDHtmlSearch -Content $content
+    }
 }

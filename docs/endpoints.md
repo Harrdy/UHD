@@ -14,7 +14,7 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 | Menü öffnen | POST | `pdmweb3.exe`: `SID`, `FID`, `OP=MENU`, `POST_MENU=1` | bestätigt | Öffentlich über `Connect-UHD`, [Sitzungstest][session]. |
 | Sitzung beenden (Fenster schließen) | GET | `pdmweb3.exe?SID=…+FID=0+ENDSESSION=1` | bestätigt | Öffentlich: `Disconnect-UHD`, [Sitzungstest][session]. |
 | Abmelden über Menü | GET | `pdmweb.exe?SID=…+FID=…+OP=LOGOUT` | bestätigt, Servlet abweichend | Öffentlich: `Disconnect-UHD -MenuLogout`, [Sitzungstest][session]. |
-| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt; zwei Filtervarianten, siehe unten | Öffentlich: `Find-UHDTicket -GroupMemberId` oder `-AllActiveIncidents`. Liest eine Seite im beobachteten `recordData`-Format; keine Pagination und kein belegtes Leerlistenformat. [Lesetest][read]. |
+| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt; zwei Filtervarianten, siehe unten | Öffentlich: `Find-UHDTicket -GroupMemberId` oder `-AllActiveIncidents`. Liest die erste Seite im beobachteten JavaScript- oder HTML-Listenformat. Keine implementierte Pagination und kein belegtes Leerlistenformat. [Lesetest][read]. |
 | Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id`; unterstützt ausgewählte benannte Felder aus dem synthetisch geprüften Formularlayout. [Lesetest][read]. |
 | Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicketAttachment -Id` sendet den Request. Antwortformat offen; keine Liste und kein Download. [Lesetest][read]. |
 | Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id -Children` sendet den Request. Antwortformat offen; keine Liste. [Lesetest][read]. |
@@ -33,6 +33,8 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 | WSDL | GET | `pdmws.exe?WSDL` | **404**, nicht verfügbar | Nicht unterstützt; kein Request im Modul. |
 
 ## Bestätigte Filtervarianten für die Ticketsuche
+
+Neben der Browserliste wurde für denselben Suchendpunkt eine skriptlose HTML-Antwort mit der Tabelle „Request-Liste“ beobachtet. Sie liefert sichtbare Request-Nummer, Endanwender, Status, Priorität und Zusammenfassung, aber keine interne Ticket- oder Gruppen-ID. Zeilenlinks enthalten einen positionsbezogenen Index; er ist keine Ticket-ID. Die Seite enthält Links mit `OP=PG` für Folgeseiten; Ausführung und Antwortverhalten dieser Links sind noch offen.
 
 Beim aufgezeichneten Klick auf „Alle Tickets“ ist die Suche der erste und einzige Servlet-Request im Mitschnitt; danach folgen statische Ressourcen. Der Menühandler erzeugt für den Suchrequest eine eigene FID (siehe [Authentifizierung](authentication.md)); sie ist kein fester Code für die jeweilige Ansicht.
 

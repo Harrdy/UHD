@@ -176,6 +176,61 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter { $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*' }
         }
 
+        It 'liest die skriptlose Request-Liste ohne Links oder erfundene interne IDs auszugeben' {
+            $null = Connect-UHD -ConfigPath $config -Credential $script:testCredential
+            Mock Invoke-UHDRequest {
+                [pscustomobject]@{ StatusCode = 200; Content = @'
+<html><table summary="Request-Liste">
+<tr><td colspan=2><hr></td></tr>
+<tr><th class=results>Request-Nummer:</th><td class=results>
+<a href=/CAisd/pdmweb2.exe?SID=10+FID=20+OP=DTL+ROW=0><span class=results><b>70</b></span></a>
+</td></tr>
+<tr><th>Endanwender:</th><td>Person &amp; Team</td></tr>
+<tr><th>Status:</th><td>Beispielstatus</td></tr>
+<tr><th>Priorität:</th><td>Beispielpriorität</td></tr>
+<tr><th>Zusammenfassung:</th>
+<tr><td colspan=2>Probe &lt;eins&gt;</td></tr>
+</table></html>
+'@ }
+            } -ParameterFilter { $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*' }
+
+            $result = @(Find-UHDTicket -AllActiveIncidents)
+            $result.Count | Should -Be 1
+            $result[0].RefNum | Should -BeExactly '70'
+            $result[0].Customer | Should -BeExactly 'Person & Team'
+            $result[0].Status | Should -BeExactly 'Beispielstatus'
+            $result[0].Priority | Should -BeExactly 'Beispielpriorität'
+            $result[0].Summary | Should -BeExactly 'Probe <eins>'
+            $result[0].Id | Should -BeNullOrEmpty
+            $result[0].GroupId | Should -BeNullOrEmpty
+            ($result | ConvertTo-Json) | Should -Not -Match 'SID=|FID=|OP=DTL'
+            Should -Invoke Invoke-UHDRequest -Exactly 4
+            Should -Invoke Invoke-UHDRequest -Exactly 0 -ParameterFilter { $RelativeUrl -like '*OP=PG*' -or $RelativeUrl -like '*OP=DTL*' }
+        }
+
+        It 'verwirft unvollständige HTML-Treffer, ohne vorab einen Treffer auszugeben' {
+            $ticket = @'
+<tr><td colspan=2><hr></td></tr>
+<tr><th>Request-Nummer:</th><td><a href=/CAisd/pdmweb.exe?SID=11+FID=21+OP=DTL+ROW=0><span><b>71</b></span></a></td></tr>
+<tr><th>Endanwender:</th><td>Testperson</td></tr>
+<tr><th>Status:</th><td>Teststatus</td></tr>
+<tr><th>Priorität:</th><td>Testpriorität</td></tr>
+<tr><th>Zusammenfassung:</th><tr><td>Testsummary</td></tr>
+'@
+            $results = & {
+                try {
+                    ConvertFrom-UHDHtmlSearch -Content ('<table summary="Request-Liste">' + $ticket +
+                        '<tr><td colspan=2><hr></td></tr><tr><th>Status:</th><td>Unvollständig</td></tr></table>')
+                }
+                catch {
+                    $_.Exception.Message
+                }
+            }
+            @($results).Count | Should -Be 1
+            $results | Should -BeLike '*Antwortformat*'
+            { ConvertFrom-UHDHtmlSearch -Content ('<!--<table summary="Request-Liste">' + $ticket + '</table>-->') } | Should -Throw '*Antwortformat*'
+        }
+
         It 'erhält wörtliche Kommentar-, Script- und Style-Zeichen in Detailfeldern' {
             $html = @'
 <!-- <input name="ref_num" value="DECOY-1"> -->
