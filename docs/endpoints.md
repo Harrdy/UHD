@@ -34,6 +34,8 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 
 ## Bestätigte Filtervarianten für die Ticketsuche
 
+Beim aufgezeichneten Klick auf „Alle Tickets“ ist die Suche der erste und einzige Servlet-Request im Mitschnitt; danach folgen statische Ressourcen. Der Menühandler erzeugt für den Suchrequest eine eigene FID (siehe [Authentifizierung](authentication.md)); sie ist kein fester Code für die jeweilige Ansicht.
+
 - **Aktive Incidents ohne Gruppenfilter:** `active=1 AND type = 'I' AND template_name is NULL`. Der Filter schließt Vorlagen aus und ist keine Suche nach allen Ticketarten oder inaktiven Tickets.
 - **Gruppenmitgliedschaft:** `(status <> 'EXTERL' AND status <> 'EXTABG') and active=1 AND type = 'I' AND group.[group]group_list.member IN (U'<Kennung>')`. Belegt ist genau eine 32-stellige Hex-Mitgliedskennung ohne Bindestriche; das Modul ergänzt das `U'…'`-Literal selbst. Mehrere Kennungen und Dezimal-IDs sind nicht belegt.
 

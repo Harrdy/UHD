@@ -9,7 +9,10 @@ function ConvertTo-UHDOperationUrl {
         [System.Collections.IDictionary]$Query,
 
         [ValidateSet('+', '&')]
-        [string]$Separator = '+'
+        [string]$Separator = '+',
+
+        [ValidatePattern('\A[0-9]+\z')]
+        [string]$RequestFid = $Session.FID
     )
 
     $fields = foreach ($key in $Query.Keys) {
@@ -20,7 +23,7 @@ function ConvertTo-UHDOperationUrl {
     }
     $pairs = @(
         "SID=$([uri]::EscapeDataString([string]$Session.SID))"
-        "FID=$([uri]::EscapeDataString([string]$Session.FID))"
+        "FID=$([uri]::EscapeDataString($RequestFid))"
         $fields
     )
     '{0}?{1}' -f $Session.Servlet, ($pairs -join $Separator)

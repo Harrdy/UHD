@@ -8,7 +8,7 @@ Die dokumentierte Anmeldung ist formularbasiert (`USERNAME` und `PIN` als POST).
 2. Das Modul liest die `REPLACE_LOGIN`-Zieladresse aus der HTML-Antwort, ohne JavaScript auszuführen. Das Ziel muss dieselbe HTTPS-Basis verwenden und auf einen der dokumentierten Servlet-Namen unter dieser Basis zeigen.
 3. Das Modul übernimmt `SID` und `FID` getrennt aus dem folgenden Formular und verwendet sie für `OP=MENU`. Nach dem Menüaufruf gibt `Connect-UHD` nur `IsConnected` und `ConnectedAt` aus.
 
-Nach dem Login verwendet das Modul den übernommenen Servlet-Namen für Sitzungsrequests. Wie sich FID-Werte während einer längeren Sitzung ändern, ist offen. Antwortet ein Request in einer aktiven Sitzung mit dem erkannten Login-Formular, verwirft das Modul den aktiven Status und verlangt eine erneute Anmeldung. Das Verhalten bei tatsächlich abgelaufener Sitzung ist nicht live geprüft.
+Nach dem Login verwendet das Modul den übernommenen Servlet-Namen für Sitzungsrequests. Beim Klick auf eine Ticketliste im linken Menü erzeugt der Browser für die Anfrage eine FID: Der Menühandler ruft den Generator auf, der einen Zufallswert zwischen 0 und 10000 rundet. Die SID bleibt dabei gleich. Das Modul bildet dieses Verhalten für `Find-UHDTicket` nach, ohne die im Menüformular übernommene FID zu ändern. Für andere Operationen bleibt die FID-Herkunft offen. Antwortet ein Request in einer aktiven Sitzung mit dem erkannten Login-Formular, verwirft das Modul den aktiven Status und verlangt eine erneute Anmeldung. Das Verhalten bei tatsächlich abgelaufener Sitzung ist nicht live geprüft.
 
 ## Abmelden
 

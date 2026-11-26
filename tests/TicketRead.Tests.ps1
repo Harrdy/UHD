@@ -9,6 +9,7 @@ Describe 'UHD-Tickets lesen' {
             $dummyPin = [System.Security.SecureString]::new()
             $dummyPin.AppendChar([char]65)
             $script:testCredential = [pscredential]::new('synthetisch', $dummyPin)
+            Mock Get-Random { 0.4321 }
             Mock Invoke-UHDWebRequest { throw 'Offline-Test: Netzwerkzugriff ist verboten.' }
             Mock Invoke-UHDRequest { throw 'Offline-Test: nicht erwarteter UHD-Request.' }
             Mock Invoke-UHDRequest {
@@ -83,7 +84,7 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             Should -Invoke Invoke-UHDRequest -Exactly 6
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -ceq ('pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=cr+KEEP.where_clause=' +
+                $RelativeUrl -ceq ('pdmweb2.exe?SID=478+FID=4321+OP=SEARCH+FACTORY=cr+KEEP.where_clause=' +
                     [uri]::EscapeDataString("(status <> 'EXTERL' AND status <> 'EXTABG') and active=1 AND type = 'I' AND group.[group]group_list.member IN (U'A1B2C3D4E5F60718293A4B5C6D7E8F90')"))
             }
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
@@ -118,9 +119,21 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             Should -Invoke Invoke-UHDRequest -Exactly 4
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -ceq ('pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=cr+KEEP.where_clause=' +
+                $RelativeUrl -ceq ('pdmweb2.exe?SID=478+FID=4321+OP=SEARCH+FACTORY=cr+KEEP.where_clause=' +
                     [uri]::EscapeDataString("active=1 AND type = 'I' AND template_name is NULL"))
             }
+        }
+
+        It 'generiert für jeden Suchaufruf eine FID, ohne die Menüsitzung zu ändern' {
+            $null = Connect-UHD -ConfigPath $config -Credential $script:testCredential
+            $null = Find-UHDTicket -AllActiveIncidents
+            Mock Get-Random { 0.78901 }
+            $null = Find-UHDTicket -AllActiveIncidents
+
+            Should -Invoke Get-Random -Exactly 2 -ParameterFilter { $Minimum -eq 0.0 -and $Maximum -eq 1.0 }
+            Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter { $RelativeUrl -like '*SID=478+FID=4321+OP=SEARCH+FACTORY=cr+*' }
+            Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter { $RelativeUrl -like '*SID=478+FID=7890+OP=SEARCH+FACTORY=cr+*' }
+            (Get-UHDSession).FID | Should -BeExactly '913'
         }
 
         It 'lehnt unbelegte oder manipulierte Mitgliedskennungen vor dem Request ab' {

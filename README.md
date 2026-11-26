@@ -2,7 +2,7 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.3.1.** Die Ticketsuche liest das beobachtete Browser-Antwortformat. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Anmeldung, Suche, Detailabruf und Abmeldung wurden außerdem als Ablauf mit synthetischen Antworten geprüft; für den Detailparser bleibt es bei dieser synthetischen Prüfung. Die Live-Kompatibilität ist nicht bestätigt.
+**Stand: Phase 2, Proof of Concept 0.3.2.** Die Ticketsuche liest das beobachtete Browser-Antwortformat und erzeugt wie beim Menüklick pro Suchaufruf eine FID. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Anmeldung, Suche, Detailabruf und Abmeldung wurden außerdem als Ablauf mit synthetischen Antworten geprüft; für den Detailparser bleibt es bei dieser synthetischen Prüfung. Die Live-Kompatibilität ist nicht bestätigt.
 
 | Cmdlet | Stand |
 |---|---|
