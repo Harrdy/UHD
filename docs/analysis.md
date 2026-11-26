@@ -82,6 +82,8 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 Übergänge laut Aufzeichnungen:
 - Ab `WIP`: `EXTERL`, `EXTABG`, `CL`, `PF`, `FWD`, `CB`.
 - Ab `PF` (Gelöst): `CL`, `WIP`.
+- Ab `CB` (Rückfrage): `WIP`, `FWD`.
+- Format der Antwort auf `VALID_TRANSITIONS` mit Labels: `CODE@Bezeichnung` (URL-kodiert), z. B. `WIP@In%20Bearbeitung`, `CL@Geschlossen`.
 
 Die Statusliste aus dem Client (6 Folgestatus aus In Bearbeitung) passt zur Anzahl der Codes.
 
