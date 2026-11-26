@@ -4,19 +4,19 @@ function ConvertFrom-UHDHtmlSearch {
     param(
         [Parameter(Mandatory)]
         [AllowEmptyString()]
-        [string]$Content
+        [string]$Content,
+
+        [pscustomobject]$Markup = (Get-UHDSearchMarkup -Content $Content)
     )
 
     $unsupported = 'Antwortformat der UHD-Ticketsuche nicht erkannt; es wurden keine Treffer ausgegeben.'
-    if ($Content.Length -gt 1MB) { throw $unsupported }
-
-    $html = [regex]::Replace($Content, '(?s)<!--.*?(?:-->|\z)', '')
-    $tables = [regex]::Matches($html, '(?is)<table\s[^>]*?(?<=\s)summary\s*=\s*["'']Request-Liste["''](?=[\s>])[^>]*>(?<rows>.*?)</table\s*>')
-    if ($tables.Count -ne 1) { throw $unsupported }
+    if ($Markup.RequestTableCount -ne 1 -or $Markup.RequestTables.Count -ne 1 -or $Markup.Scripts.Count -ne 0) {
+        throw $unsupported
+    }
 
     # Die beobachtete Liste trennt Treffer per Linie. Ein unbekannter oder
     # unvollständiger Treffer verhindert die Ausgabe der gesamten Seite.
-    $rows = [regex]::Split($tables[0].Groups['rows'].Value, '(?i)<tr>\s*<td\s+colspan\s*=\s*2\s*>\s*<hr\s*>\s*</td>\s*</tr>')
+    $rows = [regex]::Split($Markup.RequestTables[0], '(?i)<tr>\s*<td\s+colspan\s*=\s*2\s*>\s*<hr\s*>\s*</td>\s*</tr>')
     if ($rows.Length -lt 2 -or -not [string]::IsNullOrWhiteSpace($rows[0])) { throw $unsupported }
 
     $ticketLink = '<a\s+href=/CAisd/pdmweb[23]?\.exe\?SID=[0-9]+\+FID=[0-9]+\+OP=DTL\+ROW=(?<row>[0-9]+)\s*>\s*<span[^>]*>\s*<b>\s*(?<ref>[0-9]+)\s*</b>\s*</span>\s*</a>'

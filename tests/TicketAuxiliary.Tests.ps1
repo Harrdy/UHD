@@ -38,7 +38,7 @@ Describe 'UHD-Hilfsoperationen und Schreibgrenze' {
             $result.Label | Should -Be 'In Bearbeitung'
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -ceq 'pdmweb2.exe?SID=21+FID=43+OP=VALID_TRANSITIONS+STATUS=OP+PERSID=cr%3A123+TYPE=I'
+                $RelativeUrl -ceq 'pdmweb2.exe?SID=21+FID=43+OP=VALID_TRANSITIONS+FACTORY=cr+STATUS_FACTORY=crs+STATUS=OP+PERSID=cr%3A123+TYPE=I'
             }
         }
 

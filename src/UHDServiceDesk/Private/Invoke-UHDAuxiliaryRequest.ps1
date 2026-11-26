@@ -16,7 +16,10 @@ function Invoke-UHDAuxiliaryRequest {
 
         [string]$Id,
 
-        [string]$Status
+        [string]$Status,
+
+        [ValidatePattern('\A[0-9A-Fa-f]{32}\z')]
+        [string]$TenantId
     )
 
     $query = Get-UHDAuxiliaryQuery @PSBoundParameters

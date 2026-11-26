@@ -103,11 +103,11 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             { Get-UHDTicketAttachment -Id 42 } | Should -Throw '*Antwortformat der Anhangliste*'
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=42'
+                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=42+KEEP.forInChildList=1'
             }
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr%3A42'
+                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=attmnt+HTMPL=list_attmnt_sd.htmpl+KEEP.ticketFac=cr+QBE.EQ.requests.cr.persistent_id=cr%3A42'
             }
         }
 
@@ -176,11 +176,23 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter { $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*' }
         }
 
-        It 'liest die skriptlose Request-Liste ohne Links oder erfundene interne IDs auszugeben' {
+        It 'erkennt die HTML-Request-Liste nur im passenden Kontext: <Mode>' -ForEach @(
+            @{ Mode = 'sichtbare Tabelle'; Prefix = ''; Suffix = ''; Reject = $false }
+            @{ Mode = 'Skripttext in Kommentar'; Prefix = '<!-- <script></script> -->'; Suffix = ''; Reject = $false }
+            @{ Mode = 'Skripttext in Attribut'; Prefix = '<div title="<script></script>"></div>'; Suffix = ''; Reject = $false }
+            @{ Mode = 'nicht ausführbares HTML-Daten-Skript'; Prefix = '<script type="text/html">recordData = nope;</script>'; Suffix = ''; Reject = $false }
+            @{ Mode = 'Kommentar zwischen sichtbaren Tabellenzeilen'; Prefix = ''; Suffix = ''; Reject = $false }
+            @{ Mode = 'Tabelle in Textfeld'; Prefix = '<textarea>'; Suffix = '</textarea>'; Reject = $true }
+            @{ Mode = 'Tabelle nach Plaintext-Start'; Prefix = '<plaintext>'; Suffix = '</plaintext>'; Reject = $true }
+            @{ Mode = 'Tabelle in Attribut'; Prefix = "<div title='"; Suffix = "'></div>"; Reject = $true }
+            @{ Mode = 'Tabelle in Vorlage'; Prefix = '<template>'; Suffix = '</template>'; Reject = $true }
+            @{ Mode = 'Tabelle in Daten-Skript'; Prefix = '<script type="application/json">'; Suffix = '</script>'; Reject = $true }
+            @{ Mode = 'widersprüchliche Formatmerkmale'; Prefix = '<script>recordData = nope;</script>'; Suffix = ''; Reject = $true }
+            @{ Mode = 'Zusammenfassung nur im Attributwert'; Prefix = ''; Suffix = ''; Reject = $true }
+        ) {
             $null = Connect-UHD -ConfigPath $config -Credential $script:testCredential
-            Mock Invoke-UHDRequest {
-                [pscustomobject]@{ StatusCode = 200; Content = @'
-<html><table summary="Request-Liste">
+            $table = @'
+<table summary="Request-Liste">
 <tr><td colspan=2><hr></td></tr>
 <tr><th class=results>Request-Nummer:</th><td class=results>
 <a href=/CAisd/pdmweb2.exe?SID=10+FID=20+OP=DTL+ROW=0><span class=results><b>70</b></span></a>
@@ -190,10 +202,25 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
 <tr><th>Priorität:</th><td>Beispielpriorität</td></tr>
 <tr><th>Zusammenfassung:</th>
 <tr><td colspan=2>Probe &lt;eins&gt;</td></tr>
-</table></html>
-'@ }
+</table>
+'@
+            if ($Mode -eq 'Zusammenfassung nur im Attributwert') {
+                $table = $table.Replace('summary="Request-Liste"', 'title='' summary="Request-Liste" ''')
+            }
+            elseif ($Mode -eq 'Kommentar zwischen sichtbaren Tabellenzeilen') {
+                $table = $table.Replace('<tr><th>Status:', '<!-- <script></script> --><tr><th>Status:')
+            }
+            $script:htmlSearchFixture = '<html>' + $Prefix + $table + $Suffix + '</html>'
+            Mock Invoke-UHDRequest {
+                [pscustomobject]@{ StatusCode = 200; Content = $script:htmlSearchFixture }
             } -ParameterFilter { $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*' }
 
+            if ($Reject) {
+                $emitted = [System.Collections.Generic.List[object]]::new()
+                { Find-UHDTicket -AllActiveIncidents | ForEach-Object { $emitted.Add($_) } } | Should -Throw '*Antwortformat*'
+                $emitted.Count | Should -Be 0
+                return
+            }
             $result = @(Find-UHDTicket -AllActiveIncidents)
             $result.Count | Should -Be 1
             $result[0].RefNum | Should -BeExactly '70'

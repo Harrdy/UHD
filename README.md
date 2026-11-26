@@ -2,21 +2,22 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.3.4.** Die Ticketsuche liest sowohl das beobachtete Browserformat mit JavaScript-Daten als auch die skriptlose HTML-Request-Liste. Die HTML-Ansicht liefert weder interne Ticket- oder Gruppen-IDs noch Arbeitsgruppe (`Group`), Bearbeiter (`Assignee`) oder letzte Änderung (`LastModified`). Diese Felder bleiben dann leer. In der Browserliste wird der Änderungszeitpunkt in UTC ausgegeben. Beide Suchparser sind offline geprüft; der Detailparser wurde nur mit synthetischen Daten geprüft.
+**Stand: Phase 2, Proof of Concept 0.4.0.** Das Modul liest Ticketsuche, Detailansicht, Aktivitäten und Statusübergänge in den belegten Formaten. Die skriptlose HTML-Request-Liste liefert weder interne Ticket- oder Gruppen-IDs noch Arbeitsgruppe (`Group`), Bearbeiter (`Assignee`) oder letzte Änderung (`LastModified`). Diese Felder bleiben dann leer. In der Browserliste wird der Änderungszeitpunkt in UTC ausgegeben. Die Auswertung wurde offline geprüft; nicht alle Live-Formate sind belegt.
 
 | Cmdlet | Stand |
 |---|---|
 | `Connect-UHD`, `Disconnect-UHD` | Formularanmeldung und Sitzungsende; optionaler Menü-Logout |
 | `Find-UHDTicket -AllActiveIncidents` | Erste Seite aktiver Incidents ohne Gruppenfilter und ohne Vorlagen; keine Suche nach allen Tickets |
 | `Find-UHDTicket -GroupMemberId` | Erste Seite aktiver Incidents für eine Gruppenmitgliedschaft; erwartet genau eine Kennung mit 32 Hex-Zeichen ohne Bindestriche |
-| `Get-UHDTicket -Id` | Liest unterstützte Detailantworten zu einer internen numerischen Ticket-ID |
-| `Get-UHDStatus -Id -Status` | Liest einen Statusübergang, wenn die Antwort aus genau einem `CODE@Bezeichnung`-Eintrag besteht |
-| `Get-UHDTicket -Children`, `Get-UHDTicketAttachment` | Die dokumentierten Requests sind implementiert. Das Antwortformat ist offen; die Cmdlets melden einen Fehler statt einer leeren Liste. Kein Download. |
+| `Get-UHDTicket -Id` | Liest [belegte Detailfelder](docs/reading-detail.md) einschließlich UTC-Zeitpunkten sowie getrennten IDs und Anzeigenamen für Bearbeiter, Gruppe und Endanwender. Kategorie und Elternticket bleiben im Browserformat offen. |
+| `Get-UHDTicketActivity -Id` | Liest [belegte Aktivitäten](docs/reading-activity.md) mit Typ, Bearbeiter, Zeitstempel und Beschreibung. Leerformat und Folgeseiten sind offen. |
+| `Get-UHDStatus -Id -Status` | Liest [Übergänge](docs/reading-status.md) mit Zielcode, Standardkennzeichnung und Kommentarpflicht, soweit in der Antwort enthalten. `-TenantId` übergibt die bekannte Mandantenkennung. Ändert den Status nicht. |
+| `Get-UHDTicket -Children`, `Get-UHDTicketAttachment` | Erkennen die [belegten leeren Listen](docs/reading-lists.md). Nicht leere oder unbekannte Formate melden einen Formatfehler. Kein Download. |
 | Änderung, Abschluss, Kommentar, Upload, Benutzer-/Gruppensuche und Kataloge | Nicht verfügbar. Insbesondere senden `New-UHDTicket` und `Set-UHDTicket` keine Requests. |
 
-Die [Endpunktmatrix](docs/endpoints.md) unterscheidet zwischen getestetem Request-Aufbau, ausgewerteten Antwortformaten und offenen Protokolldetails. [Beispiele](examples/README.md) zeigen den Offline-Test und die öffentliche API.
+Die [Endpunktmatrix](docs/endpoints.md) unterscheidet zwischen geprüftem Request-Aufbau, ausgewerteten Antwortformaten und offenen Protokolldetails. Die [Prüfanleitung](examples/README.md) zeigt, wie du für freigegebene Testtickets eine einzelne Leseprobe ausführst und lokale Browsermitschnitte offline auswertest. Teile nur die bereinigten JSON-Berichte, keine Rohdaten, URLs mit Sitzungswerten oder HAR-Dateien.
 
-Suchtreffer geben die interne Ticket-ID als `Id` und, falls vorhanden, die Gruppen-ID als `GroupId` aus. `GroupId` ist nicht die Mitgliedskennung für `-GroupMemberId`. Dezimal-IDs und mehrere Kennungen pro Aufruf werden nicht mehr angenommen. Ein Filter nach genau einer Gruppe und Folgeseiten sind noch nicht unterstützt.
+Suchtreffer im Browserformat geben die interne Ticket-ID als `Id` und, falls vorhanden, die Gruppen-ID als `GroupId` aus. Die skriptlose Liste liefert statt einer internen Ticket-ID nur die sichtbare Ticketnummer `RefNum`. `GroupId` ist nicht die Mitgliedskennung für `-GroupMemberId`. Dezimal-IDs und mehrere Kennungen pro Aufruf werden nicht mehr angenommen. Ein Filter nach genau einer Gruppe und Folgeseiten sind noch nicht unterstützt.
 
 ## Voraussetzungen und Konfiguration
 
@@ -55,7 +56,9 @@ Invoke-Pester -Configuration $config
 Die Tests mocken die Serverantworten; ein zusätzlicher Test prüft eine Verbindungsverweigerung lokal über Loopback. Für die statische Analyse in einer separaten PowerShell-Sitzung:
 
 ```powershell
-Invoke-ScriptAnalyzer -Path ./src/UHDServiceDesk -Recurse -ExcludeRule PSUseBOMForUnicodeEncodedFile
+@('./src/UHDServiceDesk', './examples') | ForEach-Object {
+    Invoke-ScriptAnalyzer -Path $_ -Recurse -ExcludeRule PSUseBOMForUnicodeEncodedFile
+}
 ```
 
 Die ausgeschlossene Regel empfiehlt für Windows PowerShell einen BOM. Das Modul richtet sich an PowerShell 7; das Repository verwendet UTF-8 gemäß `.editorconfig`.

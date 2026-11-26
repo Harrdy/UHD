@@ -15,13 +15,14 @@ Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschr
 | Sitzung beenden (Fenster schließen) | GET | `pdmweb3.exe?SID=…+FID=0+ENDSESSION=1` | bestätigt | Öffentlich: `Disconnect-UHD`, [Sitzungstest][session]. |
 | Abmelden über Menü | GET | `pdmweb.exe?SID=…+FID=…+OP=LOGOUT` | bestätigt, Servlet abweichend | Öffentlich: `Disconnect-UHD -MenuLogout`, [Sitzungstest][session]. |
 | Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt; zwei Filtervarianten, siehe unten | Öffentlich: `Find-UHDTicket -GroupMemberId` oder `-AllActiveIncidents`. Liest die erste Seite im beobachteten JavaScript- oder HTML-Listenformat. Keine implementierte Pagination und kein belegtes Leerlistenformat. [Lesetest][read]. |
-| Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id`; unterstützt ausgewählte benannte Felder aus dem synthetisch geprüften Formularlayout. [Lesetest][read]. |
-| Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicketAttachment -Id` sendet den Request. Antwortformat offen; keine Liste und kein Download. [Lesetest][read]. |
-| Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id -Children` sendet den Request. Antwortformat offen; keine Liste. [Lesetest][read]. |
+| Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt | `Get-UHDTicket -Id` liest die [belegten Browser-Detailfelder](reading-detail.md) und das bisher unterstützte einfache Formularlayout. [Detailtests][detail]. |
+| Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+HTMPL=list_attmnt_sd.htmpl+KEEP.ticketFac=cr+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt | `Get-UHDTicketAttachment -Id` erkennt die [belegte leere Liste](reading-lists.md); nicht leere Formate offen. Kein Download. [Listentests][lists]. |
+| Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>+KEEP.forInChildList=1` | bestätigt | `Get-UHDTicket -Id -Children` erkennt die [belegte leere Liste](reading-lists.md); nicht leere Formate offen. [Listentests][lists]. |
+| Ticketaktivitäten | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=alg+QBE.EQ.call_req_id=cr:<id>` | bestätigt | `Get-UHDTicketActivity -Id` liest [belegte Datensätze](reading-activity.md), prüft ihre Ticketzuordnung und schreibt keine Aktivitäten. Leere Antworten und Folgeseiten sind offen. [Aktivitätstests][activity]. |
 | Neues Ticket (Formular) | GET | `pdmweb3.exe?…+OP=CREATE_NEW+FACTORY=cr+PRESET=type:I` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; kein öffentlicher Formularparser. [Hilfstest][aux]. |
 | Speichern (neu und ändern) | GET | `pdmweb3.exe?JEDIT=1&…&OP=UPDATE&FACTORY=cr&SET.*&KEY.*` | bestätigt, Antwort auswertbar | Gesperrt: vollständiges Formular und Verifikation nicht belegt. `New-UHDTicket` und `Set-UHDTicket` senden keine Requests. [Null-Request-Test][aux]. |
 | Ticket öffnen für Bearbeitung | GET | `pdmweb3.exe?…+OP=UPDATE+FACTORY=cr+SET.id=<id>` | bestätigt | Nur Query-Vorlage in `Get-UHDAuxiliaryQuery`; kein Request. Mandantenparameter und mögliches Sperrverhalten sind offen. [Hilfstest][aux]. |
-| Erlaubte Statuswechsel | GET | `pdmweb3.exe?…+OP=VALID_TRANSITIONS+STATUS=<status>+PERSID=cr:<id>+TYPE=I` | bestätigt, Codes offen | Öffentlich: `Get-UHDStatus -Id -Status` liefert `Code` und `Label` für genau einen URL-kodierten Eintrag. Listenrahmen und Leerformat sind offen. [Hilfstest][aux]. |
+| Erlaubte Statuswechsel | GET | `pdmweb3.exe?…+OP=VALID_TRANSITIONS+FACTORY=cr+STATUS_FACTORY=crs+STATUS=<status>+PERSID=cr:<id>+TENANT=<Kennung>+TYPE=I` | bestätigt mit Mandantenkennung; Verhalten ohne `TENANT` offen | `Get-UHDStatus -Id -Status` liest die [belegte Übergangsliste](reading-status.md). `-TenantId` übergibt die bekannte Mandantenkennung; das Leerformat ist offen. [Statustests][status]. |
 | Pflichtfelder prüfen | GET | `pdmweb3.exe?…+OP=GET_REQUIRED_FIELDS+FACTORY=cr+status=<status>` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; kein bestätigtes Antwortlayout. [Hilfstest][aux]. |
 | Kontakt laden | GET | `pdmweb3.exe?…+OP=SPEC_HAND+FACTORY=cnt+PERSID=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine Benutzersuche oder öffentliche Rohantwort. [Hilfstest][aux]. |
 | Servicevertrag laden | GET | `pdmweb3.exe?…+OP=GET_SVC_CONTRACT+new_customer=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine öffentliche Antwortauswertung. [Hilfstest][aux]. |
@@ -52,5 +53,9 @@ Beim Speichern werden alle Formularfelder gesendet. Die URL ist 1,5 KB lang. Bes
 [session]: ../tests/Session.Tests.ps1
 [read]: ../tests/TicketRead.Tests.ps1
 [aux]: ../tests/TicketAuxiliary.Tests.ps1
+[detail]: ../tests/NativeDetail.Tests.ps1
+[lists]: ../tests/NativeLists.Tests.ps1
+[activity]: ../tests/NativeActivity.Tests.ps1
+[status]: ../tests/NativeStatus.Tests.ps1
 
-In der Analyse erwähnte Aktivitäten (`SEARCH FACTORY=alg`) sind kein vollständig belegter Request-Vertrag. Allgemeine Benutzer- und Gruppensuche sowie Kategorie-, Status- und Prioritätskataloge sind nicht umgesetzt.
+Allgemeine Benutzer- und Gruppensuche sowie Kategorie-, Status- und Prioritätskataloge sind nicht umgesetzt. Die [Prüfanleitung](../examples/README.md) zeigt, wie du für fehlende Leseformen einen bereinigten Bericht erzeugst. Die Skripte verfolgen keine Links und führen keine Änderungen aus.

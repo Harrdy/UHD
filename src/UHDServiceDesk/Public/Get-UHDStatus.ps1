@@ -1,16 +1,18 @@
 function Get-UHDStatus {
     <#
     .SYNOPSIS
-        Liest einen belegten Statusübergang für ein vorhandenes Ticket ab.
+        Liest die Statusübergänge eines vorhandenen Tickets.
     .DESCRIPTION
-        Unterstützt Antworten, die genau aus einem CODE@Bezeichnung-Eintrag
-        bestehen. Die Bezeichnung ist URL-kodiert. Das äußere Format für mehrere
-        Einträge oder eine leere Liste ist nicht belegt. Andere Antworten werden
-        deshalb nicht als gültige Übergangsliste interpretiert.
+        Gibt die Ziele mit Standardkennzeichnung und Kommentarpflicht aus,
+        soweit sie im belegten Antwortformat enthalten sind. Die Bezeichnung
+        wird nur ausgegeben, wenn sie in der Antwort vorhanden ist.
     .PARAMETER Id
         Numerische interne Ticket-ID, nicht die sichtbare Ticketnummer.
     .PARAMETER Status
         Aktueller Status als Kurzcode, zum Beispiel WIP.
+    .PARAMETER TenantId
+        Optionale 32-stellige Hex-Kennung des Ticketmandanten. Sie wird nicht
+        automatisch ermittelt.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -21,17 +23,14 @@ function Get-UHDStatus {
 
         [Parameter(Mandatory)]
         [ValidatePattern('\A[A-Z][A-Z0-9]{0,31}\z')]
-        [string]$Status
+        [string]$Status,
+
+        [ValidatePattern('\A[0-9A-Fa-f]{32}\z')]
+        [string]$TenantId
     )
 
-    $response = Invoke-UHDAuxiliaryRequest -Operation VALID_TRANSITIONS -Id $Id -Status $Status
-    $entry = ([string]$response.Content).Trim()
-    $match = [regex]::Match($entry, '\A(?<code>[A-Z][A-Z0-9]{0,31})@(?<label>(?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+)\z')
-    if ($match.Success) {
-        $label = [uri]::UnescapeDataString($match.Groups['label'].Value)
-        if (-not [string]::IsNullOrWhiteSpace($label) -and $label -notmatch '[\p{C}]|%[0-9A-Fa-f]{2}') {
-            return [pscustomobject]@{ Code = $match.Groups['code'].Value; Label = $label }
-        }
-    }
-    throw 'Das Antwortformat der Statusübergänge ist noch offen; erwartet wird genau ein belegter CODE@Bezeichnung-Eintrag.'
+    $arguments = @{ Operation = 'VALID_TRANSITIONS'; Id = $Id; Status = $Status }
+    if ($PSBoundParameters.ContainsKey('TenantId')) { $arguments.TenantId = $TenantId }
+    $response = Invoke-UHDAuxiliaryRequest @arguments
+    ConvertFrom-UHDStatusResponse -Content ([string]$response.Content)
 }

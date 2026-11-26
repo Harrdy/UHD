@@ -4,8 +4,8 @@ BeforeAll {
 }
 
 Describe 'Modul UHDServiceDesk' {
-    It 'exportiert die geplanten 15 Cmdlets' {
-        (Get-Command -Module UHDServiceDesk -CommandType Function).Count | Should -Be 15
+    It 'exportiert die geplanten 16 Cmdlets' {
+        (Get-Command -Module UHDServiceDesk -CommandType Function).Count | Should -Be 16
     }
 
     It 'Platzhalter werfen NotImplementedException' {

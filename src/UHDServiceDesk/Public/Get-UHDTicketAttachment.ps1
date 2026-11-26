@@ -3,8 +3,9 @@ function Get-UHDTicketAttachment {
     .SYNOPSIS
         Fragt den dokumentierten Endpunkt für die Anhangliste eines Tickets ab.
     .DESCRIPTION
-        Das Antwortformat der Liste ist noch offen; die Abfrage endet derzeit mit
-        einem kontrollierten Fehler. Dieses Cmdlet lädt keine Dateien herunter.
+        Eindeutig leere Listen geben keine Objekte aus. Nicht leere oder
+        unbekannte Formate werden noch nicht unterstützt. Das Cmdlet lädt
+        keine Dateien herunter.
     #>
     [CmdletBinding()]
     param(
@@ -17,8 +18,10 @@ function Get-UHDTicketAttachment {
     $url = ConvertTo-UHDOperationUrl -Session $session -Query ([ordered]@{
         OP = 'SEARCH'
         FACTORY = 'attmnt'
+        HTMPL = 'list_attmnt_sd.htmpl'
+        'KEEP.ticketFac' = 'cr'
         'QBE.EQ.requests.cr.persistent_id' = "cr:${Id}"
     })
-    $null = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
-    throw 'Das Antwortformat der Anhangliste ist noch offen; die Liste konnte nicht ausgewertet werden.'
+    $response = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
+    ConvertFrom-UHDEmptyList -Content ([string]$response.Content) -Factory attmnt
 }

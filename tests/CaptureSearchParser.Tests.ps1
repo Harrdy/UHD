@@ -61,6 +61,32 @@ $script:rowFixture
             @(ConvertFrom-UHDCapturedSearch -Content $html).Count | Should -Be 1
         }
 
+        It 'verwirft Treffer in nicht ausführbaren oder mehrdeutigen Skript-Typen: <Type>' -ForEach @(
+            @{ Type = 'type="text/html"' }
+            @{ Type = 'type="text/javascript" type="text/html"' }
+        ) {
+            { ConvertFrom-UHDCapturedSearch -Content "<script $Type>`n$script:rowFixture`n</script>" } | Should -Throw '*Antwortformat*'
+        }
+
+        It 'akzeptiert den belegten Typ text/javascript' {
+            @(ConvertFrom-UHDCapturedSearch -Content "<script type='text/javascript'>`n$script:rowFixture`n</script>").Count | Should -Be 1
+        }
+
+        It 'wertet bei externen Skripten keine eingebetteten Treffer aus: <Source>' -ForEach @(
+            @{ Source = 'src="/dummy.js"' }
+            @{ Source = 'src=""' }
+            @{ Source = 'SRC' }
+            @{ Source = 'src="/dummy.js" src="/other.js"' }
+        ) {
+            $external = "<script $Source>`n$script:rowFixture`n</script>"
+            { ConvertFrom-UHDCapturedSearch -Content $external } | Should -Throw '*Antwortformat*'
+
+            $real = $script:rowFixture.Replace('cr:42', 'cr:57').Replace('EX-42', 'EX-57')
+            $results = @(ConvertFrom-UHDCapturedSearch -Content "$external`n<script>`n$real`n</script>")
+            $results.Count | Should -Be 1
+            $results[0].Id | Should -BeExactly '57'
+        }
+
         It 'gibt bei defektem Folgedatensatz keine Teilergebnisse aus: <Mode>' -ForEach @(
             @{ Mode = 'keine Zeilengrenze'; Old = 'rs.addRow'; New = '// rs.addRow' }
             @{ Mode = 'unbekannte Formatmischung'; Old = 'new Object()'; New = '{"ref_num":"EX-57"}' }

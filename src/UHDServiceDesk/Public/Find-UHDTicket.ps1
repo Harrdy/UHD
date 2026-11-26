@@ -41,17 +41,18 @@ function Find-UHDTicket {
     })
     $response = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
     $content = [string]$response.Content
+    $markup = Get-UHDSearchMarkup -Content $content
     if ($VerbosePreference -ne 'SilentlyContinue') {
         # Keine Antwortdaten oder Werte aus der Query protokollieren.
         Write-Verbose ('UHD-Suchantwort: HTTP={0}; Zeichen={1}; HTML={2}; Skript={3}; recordData={4}; addRow={5}' -f
             [int]$response.StatusCode, $content.Length,
-            ($content -match '<html(?=[\s>])'), ($content -match '<script(?=[\s>])'),
+            ($content -match '<html(?=[\s>])'), ($markup.Scripts.Count -gt 0),
             ($content -cmatch '\brecordData\b'), ($content -cmatch '\brs\s*\.\s*addRow\s*\('))
     }
-    if ($content -match '<script(?=[\s>])') {
-        ConvertFrom-UHDCapturedSearch -Content $content
+    if ($markup.RequestTableCount -gt 0) {
+        ConvertFrom-UHDHtmlSearch -Content $content -Markup $markup
     }
     else {
-        ConvertFrom-UHDHtmlSearch -Content $content
+        ConvertFrom-UHDCapturedSearch -Content $content -Markup $markup
     }
 }

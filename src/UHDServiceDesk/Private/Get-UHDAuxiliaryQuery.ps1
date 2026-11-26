@@ -14,7 +14,10 @@ function Get-UHDAuxiliaryQuery {
         [string]$Id,
 
         [ValidatePattern('\A[A-Z][A-Z0-9]{0,31}\z')]
-        [string]$Status
+        [string]$Status,
+
+        [ValidatePattern('\A[0-9A-Fa-f]{32}\z')]
+        [string]$TenantId
     )
 
     if ($Operation -in 'UPDATE', 'VALID_TRANSITIONS') {
@@ -27,10 +30,19 @@ function Get-UHDAuxiliaryQuery {
         throw 'Ein Kurzcode für den Status ist erforderlich.'
     }
 
+    if ($TenantId -and $Operation -ne 'VALID_TRANSITIONS') {
+        throw 'Eine Mandantenkennung ist bei diesem Aufruf nur für Statusübergänge belegt.'
+    }
+
     switch ($Operation.ToUpperInvariant()) {
         'CREATE_NEW'          { [ordered]@{ OP = 'CREATE_NEW'; FACTORY = 'cr'; PRESET = 'type:I' } }
         'UPDATE'              { [ordered]@{ OP = 'UPDATE'; FACTORY = 'cr'; 'SET.id' = $Id } }
-        'VALID_TRANSITIONS'   { [ordered]@{ OP = 'VALID_TRANSITIONS'; STATUS = $Status; PERSID = "cr:${Id}"; TYPE = 'I' } }
+        'VALID_TRANSITIONS' {
+            $query = [ordered]@{ OP = 'VALID_TRANSITIONS'; FACTORY = 'cr'; STATUS_FACTORY = 'crs'; STATUS = $Status; PERSID = "cr:${Id}" }
+            if ($TenantId) { $query.TENANT = $TenantId }
+            $query.TYPE = 'I'
+            $query
+        }
         'GET_REQUIRED_FIELDS' { [ordered]@{ OP = 'GET_REQUIRED_FIELDS'; FACTORY = 'cr'; status = $Status } }
         'SPEC_HAND'           { [ordered]@{ OP = 'SPEC_HAND'; FACTORY = 'cnt'; PERSID = "cnt:${Id}" } }
         'GET_SVC_CONTRACT'    { [ordered]@{ OP = 'GET_SVC_CONTRACT'; new_customer = "cnt:${Id}" } }
