@@ -58,12 +58,20 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 - `pdmws.exe?WSDL` liefert **404**. Kein SOAP-Endpunkt unter diesem Pfad.
 - Keine REST- oder JSON-Schnittstelle erkennbar.
 
+## Aktivitäten (Reiter "Aktivitäten", Factory `alg`)
+
+- Die Aktivitätsliste ist ein **automatisches Änderungsprotokoll**. Jeder Speicher-Vorgang erzeugt Einträge.
+- Die Beschreibung eines Eintrags nennt die Änderung, z. B. `Status wurde von 'In Bearbeitung' in 'Gelöst' geändert`, `Übertragen von Zuständiger von 'X' auf 'Y'` oder `FELD='Beschreibung' OLD=…`.
+- Beobachtete Typen (`listtypecode`): `FLD` Feldaktualisierung (15), `INIT` Anfang (9), `ST` Status aktualisieren (5), `ATTACHTDOC` Dokument anhängen (6), `TR` Transfer (4), `ADJURGIMP` Auswirkungsdringlichkeit anpassen (4), `RE` Abgeschlossen (1).
+- Ein manuell angelegter Eintrag ist in keiner Aufzeichnung enthalten.
+- Der Statuscode `PF` entspricht vermutlich `Gelöst` (Zusammenhang: Speichern mit `SET.status=PF`, Aktivität „… in ‚Gelöst‘ geändert“). Vermutung, nicht bestätigt.
+
 ## Offen
 
 | Punkt | Warum offen | Nächste Aufzeichnung |
 |---|---|---|
 | Bedeutung der Transitionscodes `CL`, `FWD`, `CB`, `PF`, `EXTERL`, `EXTABG` | nicht dokumentiert | Statuswechsel auf jeden Zielstatus |
-| Kommentar hinzufügen | nicht aufgezeichnet | Kommentar intern und öffentlich |
+| Manueller Aktivitäts-Eintrag ("Kommentar") | nicht aufgezeichnet, unklar ob die Oberfläche das vorsieht. Aktivitäten entstehen automatisch beim Speichern | Reiter "Aktivitäten" öffnen, Eintrag manuell anlegen (falls vorhanden) |
 | Bearbeiterwechsel | nur Felder bekannt | Bearbeiter ändern + speichern |
 | Abschluss mit Lösung | nicht aufgezeichnet | Ticket abschließen |
 | Anhang-Upload als Multipart | Upload läuft über ein Popup, das im Entwicklerwerkzeug nicht erscheint; die Popup-URL lässt sich nicht einzeln öffnen. Für den PoC nicht erforderlich | zurückgestellt |
