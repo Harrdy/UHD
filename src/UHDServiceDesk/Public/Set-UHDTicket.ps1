@@ -1,13 +1,16 @@
 function Set-UHDTicket {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Ändert in dieser Version kein Ticket.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Die für ein vollständiges Update zu übernehmenden Formularfelder und
+        das Sperrverhalten beim Öffnen sind nicht ausreichend belegt. Weder
+        Bearbeitungsformular noch Speicherrequest werden aufgerufen.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    throw [System.NotImplementedException]::new('Set-UHDTicket ist noch nicht implementiert.')
+    if ($PSCmdlet.ShouldProcess('UHD Service Desk', 'Ticket ändern')) {
+        throw [System.NotSupportedException]::new('Ticket kann nicht geändert werden: Speicherformular und Sperrverhalten sind noch nicht belegt. Kein Request gesendet.')
+    }
 }

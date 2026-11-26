@@ -14,9 +14,9 @@ Describe 'Modul UHDServiceDesk' {
 }
 
 Describe 'ConvertTo-UHDMaskedUrl' {
-    It 'maskiert SID und PIN' {
+    It 'maskiert die vollständige Query' {
         InModuleScope UHDServiceDesk {
-            ConvertTo-UHDMaskedUrl -Url 'https://x/pdmweb3.exe?SID=123456+FID=5+OP=UPDATE' | Should -Be 'https://x/pdmweb3.exe?SID=***+FID=5+OP=UPDATE'
+            ConvertTo-UHDMaskedUrl -Url 'https://x/pdmweb3.exe?SID=123456+FID=5+OP=UPDATE' | Should -Be 'https://x/pdmweb3.exe?***'
         }
     }
 }

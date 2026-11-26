@@ -1,7 +1,7 @@
 function ConvertTo-UHDMaskedUrl {
     <#
     .SYNOPSIS
-        Maskiert SID und FID in einer URL, bevor sie geloggt wird.
+        Entfernt Query, Fragment und Benutzerinformationen vor der Protokollierung.
     #>
     [CmdletBinding()]
     [OutputType([string])]
@@ -10,5 +10,11 @@ function ConvertTo-UHDMaskedUrl {
         [string]$Url
     )
 
-    $Url -replace 'SID=\d+', 'SID=***' -replace 'PIN=[^&+]*', 'PIN=***'
+    $uri = $null
+    if (-not [uri]::TryCreate($Url, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne 'https') {
+        return '[URL maskiert]'
+    }
+    $masked = '{0}://{1}{2}' -f $uri.Scheme, $uri.Authority, $uri.AbsolutePath
+    if ($uri.Query) { $masked += '?***' }
+    $masked
 }

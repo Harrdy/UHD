@@ -1,13 +1,16 @@
 function New-UHDTicket {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Legt in dieser Version kein Ticket an.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Die vollständigen Felder des Anlegeformulars und die eindeutige
+        Bestätigung nach dem Speichern sind nicht belegt. Es wird kein Request
+        gesendet, auch kein Formularabruf.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    throw [System.NotImplementedException]::new('New-UHDTicket ist noch nicht implementiert.')
+    if ($PSCmdlet.ShouldProcess('UHD Service Desk', 'Ticket anlegen')) {
+        throw [System.NotSupportedException]::new('Ticket kann nicht angelegt werden: Das vollständige Speicherformular und seine Verifikation sind noch nicht belegt. Kein Request gesendet.')
+    }
 }

@@ -1,13 +1,13 @@
 function Get-UHDUser {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Benutzersuche ist noch nicht implementiert.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Nur der Kontaktabruf nach interner ID ist belegt. Suchparameter und
+        Antwortlayout reichen für eine öffentliche Benutzersuche nicht aus.
     #>
     [CmdletBinding()]
     param()
 
-    throw [System.NotImplementedException]::new('Get-UHDUser ist noch nicht implementiert.')
+    throw [System.NotSupportedException]::new('Benutzersuche noch nicht implementiert: Nur der Kontaktabruf nach ID ist belegt; das Antwortformat ist offen.')
 }

@@ -12,6 +12,8 @@ function Connect-UHD {
         2. Antwort enthält eine Weiterleitung mit SID und FID (OP=REPLACE_LOGIN)
         3. GET auf diese Weiterleitung, liefert ein Formular mit SID und FID
         4. POST mit OP=MENU und POST_MENU=1 öffnet das Hauptmenü
+        Eine aktive Sitzung wird nur ohne explizite Verbindungsoptionen
+        wiederverwendet. Für Änderungen zuerst Disconnect-UHD ausführen.
         STATUS: ungetestet gegen das Live-System. Die Parser basieren auf den Aufzeichnungen.
     .PARAMETER ConfigPath
         Pfad zur Konfigurationsdatei. Standard: Umgebungsvariable UHD_CONFIG_PATH oder %APPDATA%\UHDServiceDesk\config.json
@@ -27,10 +29,10 @@ function Connect-UHD {
         Connect-UHD -ResetCredential -Verbose
     #>
     [CmdletBinding()]
+    [OutputType([pscustomobject])]
     param(
         [string]$ConfigPath,
 
-        [ValidatePattern('^https://')]
         [string]$BaseUrl,
 
         [pscredential]$Credential,
@@ -42,16 +44,22 @@ function Connect-UHD {
     )
 
     if ($script:UHDSession -and $script:UHDSession.IsConnected) {
+        foreach ($option in 'BaseUrl', 'ConfigPath', 'Credential', 'ResetCredential', 'TimeoutSec') {
+            if ($PSBoundParameters.ContainsKey($option)) {
+                throw 'Eine UHD-Sitzung ist bereits aktiv. Bitte zuerst mit Disconnect-UHD abmelden, bevor Verbindungsoptionen angegeben werden.'
+            }
+        }
         Write-Verbose 'Bestehende Sitzung wird wiederverwendet.'
-        return $script:UHDSession
+        return [pscustomobject]@{ IsConnected = $true; ConnectedAt = $script:UHDSession.ConnectedAt }
     }
 
     $cfg = Get-UHDConfig -ConfigPath $ConfigPath
 
     if (-not $BaseUrl) { $BaseUrl = $cfg.BaseUrl }
     if (-not $BaseUrl) { throw "Keine BaseUrl gesetzt. Bitte in $($cfg.ConfigPath) eintragen oder -BaseUrl angeben." }
-    if ($BaseUrl -notmatch '^https://') { throw 'BaseUrl muss mit https:// beginnen.' }
+    $baseUri = ConvertTo-UHDBaseUri -BaseUrl $BaseUrl
     if (-not $PSBoundParameters.ContainsKey('TimeoutSec')) { $TimeoutSec = $cfg.TimeoutSec }
+    if ($TimeoutSec -lt 5 -or $TimeoutSec -gt 600) { throw 'UHD-Timeout muss zwischen 5 und 600 Sekunden liegen.' }
 
     $usesStoredCredential = -not $PSBoundParameters.ContainsKey('Credential')
     if ($usesStoredCredential) {
@@ -59,7 +67,9 @@ function Connect-UHD {
     }
 
     $session = [pscustomobject]@{
-        BaseUrl     = $BaseUrl
+        BaseUrl     = $baseUri.AbsoluteUri
+        Servlet     = 'pdmweb3.exe'
+        TimeoutSec  = $TimeoutSec
         SID         = $null
         FID         = $null
         IsConnected = $false
@@ -75,33 +85,34 @@ function Connect-UHD {
         OP            = 'LOGIN'
         INITIAL_LOAD  = 'PortalSession=+OP=LOGIN'
     }
-    $step1 = Invoke-UHDRequest -Session $session -Method POST -RelativeUrl 'pdmweb3.exe' -Form $loginForm -TimeoutSec $TimeoutSec
-    $loginForm.Clear()
+    try {
+        $step1 = Invoke-UHDRequest -Session $session -Method POST -RelativeUrl $session.Servlet -Form $loginForm
+    }
+    finally {
+        $loginForm.Clear()
+    }
 
-    # Schritt 2: Weiterleitung auf REPLACE_LOGIN auswerten
-    if ($step1.Content -notmatch 'SID=(\d+)\+FID=(\d+)\+OP=REPLACE_LOGIN') {
+    $redirect = Get-UHDLoginRedirect -Content $step1.Content -BaseUri $baseUri
+    if ($null -eq $redirect) {
         $hint = if ($usesStoredCredential) { ' Falls sich das Kennwort geändert hat: Connect-UHD -ResetCredential.' } else { '' }
-        throw "Anmeldung fehlgeschlagen: keine Sitzungsweiterleitung erhalten. Zugangsdaten prüfen.$hint"
+        throw "Anmeldung fehlgeschlagen: keine eindeutige Sitzungsweiterleitung erhalten.$hint"
     }
-    $session.SID = $Matches[1]
-    $session.FID = $Matches[2]
+    $session.Servlet = $redirect.Servlet
+    $step2 = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $redirect.RelativeUrl
 
-    $step2 = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl "pdmweb3.exe?SID=$($session.SID)+FID=$($session.FID)+OP=REPLACE_LOGIN+HTMPL=post_menu.htmpl" -TimeoutSec $TimeoutSec
-
-    # Schritt 3: Formular mit SID/FID aus der Antwort übernehmen, dann Menü öffnen
-    if ($step2.Content -notmatch 'NAME="SID" VALUE="(\d+)"' -or $step2.Content -notmatch 'NAME="FID" VALUE="(\d+)"') {
-        throw 'Anmeldung fehlgeschlagen: Menüformular nicht gefunden.'
-    }
-    $session.SID = $Matches[1]
-    $session.FID = $Matches[2]
-
+    $fields = Get-UHDMenuSession -Content $step2.Content
+    $session.SID = $fields.SID
+    $session.FID = $fields.FID
     $menuForm = @{ SID = $session.SID; FID = $session.FID; OP = 'MENU'; POST_MENU = '1' }
-    $null = Invoke-UHDRequest -Session $session -Method POST -RelativeUrl 'pdmweb3.exe' -Form $menuForm -TimeoutSec $TimeoutSec
+    $menu = Invoke-UHDRequest -Session $session -Method POST -RelativeUrl $session.Servlet -Form $menuForm
+    if ($menu.Content -match '\bname\s*=\s*["'']login["'']') {
+        throw 'Anmeldung fehlgeschlagen: erneute Anmeldeseite statt UHD-Menü erhalten.'
+    }
 
     $session.IsConnected = $true
     $session.ConnectedAt = Get-Date
     $script:UHDSession = $session
 
-    Write-Verbose ('Verbunden. Sitzung: SID={0}***' -f $session.SID.Substring(0, [Math]::Min(3, $session.SID.Length)))
-    $session
+    Write-Verbose 'Mit dem UHD Service Desk verbunden.'
+    [pscustomobject]@{ IsConnected = $true; ConnectedAt = $session.ConnectedAt }
 }

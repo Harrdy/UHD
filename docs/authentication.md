@@ -1,34 +1,25 @@
 # Authentifizierung und Sitzung
 
-## Verfahren
-- Formularbasiert (`USERNAME` + `PIN` als POST).
-- Keine SSO-, Kerberos- oder NTLM-Signale in den Aufzeichnungen (kein 401, kein `WWW-Authenticate`).
-- Keine Cookies. Die Sitzung wird über `SID` in URL und Formular geführt.
+Die dokumentierte Anmeldung ist formularbasiert (`USERNAME` und `PIN` als POST). Die Aufzeichnungen zeigen keine Cookies und keine SSO-, Kerberos- oder NTLM-Anmeldung. Die Sitzung wird über `SID` in URL und Formular geführt.
 
-## Ablauf
-1. Login-POST → Antwort ist HTML mit JavaScript-Weiterleitung. Darin stehen `SID` und `FID`.
-2. GET auf die Weiterleitung (`OP=REPLACE_LOGIN`). Antwort enthält ein Formular mit `SID` und `FID`.
-3. POST `OP=MENU` mit diesen Werten. Ab hier ist die Sitzung aktiv.
+## Ablauf im Modul
 
-## FID
-- Die `FID` steht bei jedem Request. Der Client erzeugt sie mit `Math.round(Math.random() * 10000)` (`fid_gen.js`).
-- Im Formular wiederholt sich eine FID über mehrere Requests. Die Herkunft dieser Werte ist offen.
-- Für das Modul: FID bei jedem Request neu setzen oder den Wert des Formulars übernehmen. Beides ist nicht getestet.
+1. `Connect-UHD` sendet den Login-POST an den dokumentierten Startpfad `pdmweb3.exe`.
+2. Das Modul liest die `REPLACE_LOGIN`-Zieladresse aus der HTML-Antwort, ohne JavaScript auszuführen. Das Ziel muss dieselbe HTTPS-Basis verwenden und auf einen der dokumentierten Servlet-Namen unter dieser Basis zeigen.
+3. Das Modul übernimmt `SID` und `FID` getrennt aus dem folgenden Formular und verwendet sie für `OP=MENU`. Nach dem Menüaufruf gibt `Connect-UHD` nur `IsConnected` und `ConnectedAt` aus.
 
-## Sitzungsende
-- Fenster schließen: `GET …?SID=…+FID=0+ENDSESSION=1`.
-- Abmelden: `GET pdmweb.exe?…+OP=LOGOUT`.
+Nach dem Login verwendet das Modul den übernommenen Servlet-Namen für Sitzungsrequests. Wie sich FID-Werte während einer längeren Sitzung ändern, ist offen. Antwortet ein Request in einer aktiven Sitzung mit dem erkannten Login-Formular, verwirft das Modul den aktiven Status und verlangt eine erneute Anmeldung. Das Verhalten bei tatsächlich abgelaufener Sitzung ist nicht live geprüft.
 
-## Abgelaufene Sitzung
-- In den Aufzeichnungen nicht beobachtet. Das Modul erkennt Anmeldeseiten an `name="login"` in der Antwort und wirft dann einen Fehler.
-- Bekannte Einschränkung: Ein fehlgeschlagener Login erzeugt dieselbe Meldung wie eine abgelaufene Sitzung. Ein Test mit falschem Kennwort ist offen.
+## Abmelden
+
+- `Disconnect-UHD`: dokumentiertes Sitzungsende über das übernommene Servlet, `FID=0` und `ENDSESSION=1`.
+- `Disconnect-UHD -MenuLogout`: dokumentierter Menü-Logout über `pdmweb.exe` und `OP=LOGOUT`.
+
+Das Modul verwirft die lokale Sitzung auch bei einem Abmeldefehler. Ohne aktive Sitzung wird kein Request gesendet. Beide Wege sind offline geprüft.
 
 ## Zugangsdaten
 
-- Beim ersten Aufruf oder wenn die Credential-Datei fehlt, öffnet sich das Login-Fenster (`Get-Credential`).
-- Benutzername und Kennwort werden danach mit `Export-Clixml` in `CredentialPath` gespeichert.
-- Unter Windows ist die Datei mit DPAPI verschlüsselt. Sie ist nur für denselben Benutzer auf demselben Rechner lesbar.
-- Ein erneutes Login-Fenster erzwingt `Connect-UHD -ResetCredential`, z. B. nach Kennwortänderung.
-- Mit `-Credential` übergebene Daten werden nicht gespeichert.
-- Das Kennwort wird nur für den Login-POST in das Formular geschrieben. Ein Hashtable-`Clear()` entfernt nur den Eintrag. Der String selbst bleibt bis zur Garbage Collection im Speicher, das ist ein bekanntes Restrisiko von PowerShell.
-- Unter Nicht-Windows-Systemen warnt das Modul, weil der Schutz dort nicht ausreicht.
+- Ohne explizites `-Credential` lädt `Connect-UHD` gespeicherte Zugangsdaten oder fragt sie über `Get-Credential` ab und speichert sie mit `Export-Clixml` in `CredentialPath`.
+- Unter Windows schützt DPAPI die Datei für denselben Benutzer auf demselben Rechner. Außerhalb von Windows warnt das Modul vor unzureichendem Schutz; dort empfiehlt sich die explizite Übergabe als `PSCredential`.
+- `Connect-UHD -ResetCredential` erzwingt beim Aufbau einer Sitzung eine neue Abfrage, sofern kein explizites `-Credential` vorliegt.
+- Das Modul speichert ein explizit übergebenes `-Credential` nicht. Das Login-Formular wird nach dem Request geleert; dies garantiert kein unmittelbares Löschen des Kennwortstrings aus dem Speicher.

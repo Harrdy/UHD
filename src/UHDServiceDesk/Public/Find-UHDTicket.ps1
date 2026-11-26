@@ -1,13 +1,28 @@
 function Find-UHDTicket {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Sucht die erste Seite nach Mitgliedschaft in den Ticketgruppen.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Verwendet den dokumentierten Gruppenmitgliedschaftsfilter mit numerischen
+        Mitgliedskennungen. Kein Freitextfilter und keine automatische Pagination.
+        Die Beobachtung in der Analyse entspricht höchstens 50 Treffern pro Seite.
+        Das unterstützte Antwortlayout wurde mit synthetischen Daten offline geprüft.
     #>
     [CmdletBinding()]
-    param()
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidatePattern('\A[0-9]{1,30}\z')]
+        [string[]]$GroupMemberId
+    )
 
-    throw [System.NotImplementedException]::new('Find-UHDTicket ist noch nicht implementiert.')
+    $session = Get-UHDSession
+    $condition = 'group.[group]group_list.member IN ({0})' -f ($GroupMemberId -join ',')
+    $url = ConvertTo-UHDOperationUrl -Session $session -Query ([ordered]@{
+        OP = 'SEARCH'
+        FACTORY = 'cr'
+        'KEEP.where_clause' = $condition
+    })
+    $response = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
+    ConvertFrom-UHDTicketResponse -Content ([string]$response.Content) -Layout Search
 }

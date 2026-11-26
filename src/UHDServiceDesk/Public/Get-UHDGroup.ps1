@@ -1,13 +1,13 @@
 function Get-UHDGroup {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Gruppensuche ist noch nicht implementiert.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Die Operationen zur Gruppenzuordnung sind bekannt, ihre Eingabefelder
+        und Antwortformate jedoch nicht vollständig belegt.
     #>
     [CmdletBinding()]
     param()
 
-    throw [System.NotImplementedException]::new('Get-UHDGroup ist noch nicht implementiert.')
+    throw [System.NotSupportedException]::new('Gruppensuche noch nicht implementiert: Parameter und Antwortformate der Zuordnungsabfragen sind offen.')
 }

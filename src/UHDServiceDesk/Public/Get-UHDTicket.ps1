@@ -1,13 +1,39 @@
 function Get-UHDTicket {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Ruft die Details eines Tickets oder die Liste seiner Untertickets ab.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        RequestedId gibt die angefragte ID wieder, nicht eine unabhängig aus
+        der Antwort bestätigte Kennung. Das unterstützte Detaillayout wurde
+        mit synthetischen Daten offline geprüft.
+    .PARAMETER Id
+        Numerische interne Ticket-ID, nicht die sichtbare Ticketnummer.
+    .PARAMETER Children
+        Fragt den dokumentierten Unterticket-Endpunkt ab. Das Antwortformat ist
+        noch offen; derzeit endet die Abfrage daher mit einem kontrollierten Fehler.
     #>
     [CmdletBinding()]
-    param()
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidatePattern('\A[0-9]{1,30}\z')]
+        [string]$Id,
 
-    throw [System.NotImplementedException]::new('Get-UHDTicket ist noch nicht implementiert.')
+        [switch]$Children
+    )
+
+    $session = Get-UHDSession
+    $query = if ($Children) {
+        [ordered]@{ OP = 'SEARCH'; FACTORY = 'in'; 'QBE.EQ.parent.id' = $Id }
+    }
+    else {
+        [ordered]@{ OP = 'SHOW_DETAIL'; FACTORY = 'cr'; PERSID = "cr:${Id}" }
+    }
+    $url = ConvertTo-UHDOperationUrl -Session $session -Query $query
+    $response = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
+    if ($Children) {
+        throw 'Das Antwortformat der Unterticketliste ist noch offen; die Liste konnte nicht ausgewertet werden.'
+    }
+    $ticket = ConvertFrom-UHDTicketResponse -Content ([string]$response.Content) -Layout Detail
+    $ticket | Add-Member -NotePropertyName RequestedId -NotePropertyValue $Id -PassThru
 }

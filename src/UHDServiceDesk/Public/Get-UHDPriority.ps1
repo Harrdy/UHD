@@ -1,13 +1,13 @@
 function Get-UHDPriority {
     <#
     .SYNOPSIS
-        Noch nicht implementiert (Platzhalter).
+        Prioritätsliste ist noch nicht implementiert.
     .DESCRIPTION
-        Die technische Grundlage steht in docs/endpoints.md. Umsetzung nach Freigabe der
-        fehlenden Aufzeichnungen (siehe docs/analysis.md, Abschnitt Offene Punkte).
+        Die bestätigte Operation zur Prioritätsberechnung liefert keinen belegten
+        Prioritätskatalog.
     #>
     [CmdletBinding()]
     param()
 
-    throw [System.NotImplementedException]::new('Get-UHDPriority ist noch nicht implementiert.')
+    throw [System.NotSupportedException]::new('Prioritätsliste noch nicht implementiert: Nur die Route zur Prioritätsberechnung ist belegt.')
 }

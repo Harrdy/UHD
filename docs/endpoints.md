@@ -1,34 +1,41 @@
 # Endpunkte
 
-Basis: `https://<host>/CAisd/`. Alle Requests sind GET, außer Login und Menü (POST).
+Basis: `https://<host>/CAisd/`. Die bestätigten Requests nutzen GET, außer Login und Menü (POST). Der abgeleitete Multipart-Upload ist nicht implementiert.
 
-Hinweis: Der Servlet-Name variiert zwischen Aufzeichnungen (`pdmweb.exe`, `pdmweb2.exe`, `pdmweb3.exe`). Das Modul sollte den Namen aus der Anmeldung übernehmen und nicht fest verdrahten.
+Hinweis: Der Servlet-Name variiert zwischen Aufzeichnungen (`pdmweb.exe`, `pdmweb2.exe`, `pdmweb3.exe`). Das Modul startet die Anmeldung über `pdmweb3.exe` und übernimmt danach den validierten Servlet-Namen aus der Sitzungsweiterleitung. Der Menü-Logout verwendet den dokumentierten abweichenden Pfad `pdmweb.exe`. Die Tabelle zeigt die Pfade der Aufzeichnungen, nicht einen festen Servlet-Namen für alle Operationen.
 Trennzeichen zwischen Parametern in Query-Strings ist meist `+` (CA-Format). Formularfelder werden mit `&` gesendet.
 
-| Zweck | Methode | Pfad und Parameter | Status |
-|---|---|---|---|
-| Login | POST | `pdmweb3.exe`: `PortalSession`, `USERNAME`, `PIN`, `PDA=No`, `OP=LOGIN`, `INITIAL_LOAD` | bestätigt |
-| Sitzungsweiterleitung | GET | `pdmweb3.exe?SID=…+FID=…+OP=REPLACE_LOGIN+HTMPL=post_menu.htmpl` | bestätigt |
-| Menü öffnen | POST | `pdmweb3.exe`: `SID`, `FID`, `OP=MENU`, `POST_MENU=1` | bestätigt |
-| Sitzung beenden (Fenster schließen) | GET | `pdmweb3.exe?SID=…+FID=0+ENDSESSION=1` | bestätigt |
-| Abmelden über Menü | GET | `pdmweb.exe?SID=…+FID=…+OP=LOGOUT` | bestätigt, Servlet abweichend |
-| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt |
-| Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt |
-| Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt |
-| Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>` | bestätigt |
-| Neues Ticket (Formular) | GET | `pdmweb3.exe?…+OP=CREATE_NEW+FACTORY=cr+PRESET=type:I` | bestätigt |
-| Speichern (neu und ändern) | GET | `pdmweb3.exe?JEDIT=1&…&OP=UPDATE&FACTORY=cr&SET.*&KEY.*` | bestätigt, Antwort auswertbar |
-| Ticket öffnen für Bearbeitung | GET | `pdmweb3.exe?…+OP=UPDATE+FACTORY=cr+SET.id=<id>` | bestätigt |
-| Erlaubte Statuswechsel | GET | `pdmweb3.exe?…+OP=VALID_TRANSITIONS+STATUS=<status>+PERSID=cr:<id>+TYPE=I` | bestätigt, Codes offen |
-| Pflichtfelder prüfen | GET | `pdmweb3.exe?…+OP=GET_REQUIRED_FIELDS+FACTORY=cr+status=<status>` | bestätigt |
-| Kontakt laden | GET | `pdmweb3.exe?…+OP=SPEC_HAND+FACTORY=cnt+PERSID=cnt:<id>` | bestätigt |
-| Servicevertrag laden | GET | `pdmweb3.exe?…+OP=GET_SVC_CONTRACT+new_customer=cnt:<id>` | bestätigt |
-| Prioritätsberechnung | GET | `pdmweb3.exe?…+OP=GET_PRI_CAL+FACTORY=in` | bestätigt |
-| Gruppenzuordnung | GET | `pdmweb3.exe?…+OP=GROUP_IN_AGT` / `AGT_IN_GROUP` | bestätigt |
-| Anhang hochladen | POST multipart | `/CAisd/UploadServlet`, Formular `frmUpload`, Popup | aus JavaScript abgeleitet, Popup-URL nicht einzeln aufrufbar, zurückgestellt |
-| Kommentar | offen | offen | offen |
-| Abschluss | offen | offen | offen |
-| WSDL | GET | `pdmws.exe?WSDL` | **404**, nicht verfügbar |
+Die Spalte **Protokollbefund** beschreibt die Aufzeichnungen. **Phase 2** beschreibt nur den Modulstand. Die angegebenen Tests prüfen den Request-Aufbau und, wo vorhanden, die Auswertung synthetischer Antworten. Keiner davon prüft die Live-Kompatibilität. Die verlinkten Tests sind Pester-Suites.
+
+| Zweck | Methode | Pfad und Parameter | Protokollbefund | Phase 2 / Offline-Beleg |
+|---|---|---|---|---|
+| Login | POST | `pdmweb3.exe`: `PortalSession`, `USERNAME`, `PIN`, `PDA=No`, `OP=LOGIN`, `INITIAL_LOAD` | bestätigt | Öffentlich: `Connect-UHD`, [Sitzungstest][session]. |
+| Sitzungsweiterleitung | GET | `pdmweb3.exe?SID=…+FID=…+OP=REPLACE_LOGIN+HTMPL=post_menu.htmpl` | bestätigt | Öffentlich über `Connect-UHD`: Ziel wird validiert; [Sitzungstest][session]. |
+| Menü öffnen | POST | `pdmweb3.exe`: `SID`, `FID`, `OP=MENU`, `POST_MENU=1` | bestätigt | Öffentlich über `Connect-UHD`, [Sitzungstest][session]. |
+| Sitzung beenden (Fenster schließen) | GET | `pdmweb3.exe?SID=…+FID=0+ENDSESSION=1` | bestätigt | Öffentlich: `Disconnect-UHD`, [Sitzungstest][session]. |
+| Abmelden über Menü | GET | `pdmweb.exe?SID=…+FID=…+OP=LOGOUT` | bestätigt, Servlet abweichend | Öffentlich: `Disconnect-UHD -MenuLogout`, [Sitzungstest][session]. |
+| Ticketsuche | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=cr+KEEP.where_clause=…` | bestätigt | Öffentlich: `Find-UHDTicket -GroupMemberId`; PoC nur mit numerischen IDs und ohne Pagination. JSON-kompatible `recordData`-Zuweisungen; kein belegtes Leerlistenformat. [Lesetest][read]. |
+| Ticket öffnen | GET | `pdmweb3.exe?…+OP=SHOW_DETAIL+FACTORY=cr+PERSID=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id`; unterstützt ausgewählte benannte Felder aus dem synthetisch geprüften Formularlayout. [Lesetest][read]. |
+| Anhang-Liste | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=attmnt+QBE.EQ.requests.cr.persistent_id=cr:<id>` | bestätigt | Öffentlich: `Get-UHDTicketAttachment -Id` sendet den Request. Antwortformat offen; keine Liste und kein Download. [Lesetest][read]. |
+| Untertickets | GET | `pdmweb3.exe?…+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=<id>` | bestätigt | Öffentlich: `Get-UHDTicket -Id -Children` sendet den Request. Antwortformat offen; keine Liste. [Lesetest][read]. |
+| Neues Ticket (Formular) | GET | `pdmweb3.exe?…+OP=CREATE_NEW+FACTORY=cr+PRESET=type:I` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; kein öffentlicher Formularparser. [Hilfstest][aux]. |
+| Speichern (neu und ändern) | GET | `pdmweb3.exe?JEDIT=1&…&OP=UPDATE&FACTORY=cr&SET.*&KEY.*` | bestätigt, Antwort auswertbar | Gesperrt: vollständiges Formular und Verifikation nicht belegt. `New-UHDTicket` und `Set-UHDTicket` senden keine Requests. [Null-Request-Test][aux]. |
+| Ticket öffnen für Bearbeitung | GET | `pdmweb3.exe?…+OP=UPDATE+FACTORY=cr+SET.id=<id>` | bestätigt | Nur Query-Vorlage in `Get-UHDAuxiliaryQuery`; kein Request. Mandantenparameter und mögliches Sperrverhalten sind offen. [Hilfstest][aux]. |
+| Erlaubte Statuswechsel | GET | `pdmweb3.exe?…+OP=VALID_TRANSITIONS+STATUS=<status>+PERSID=cr:<id>+TYPE=I` | bestätigt, Codes offen | Öffentlich: `Get-UHDStatus -Id -Status` liefert `Code` und `Label` für genau einen URL-kodierten Eintrag. Listenrahmen und Leerformat sind offen. [Hilfstest][aux]. |
+| Pflichtfelder prüfen | GET | `pdmweb3.exe?…+OP=GET_REQUIRED_FIELDS+FACTORY=cr+status=<status>` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; kein bestätigtes Antwortlayout. [Hilfstest][aux]. |
+| Kontakt laden | GET | `pdmweb3.exe?…+OP=SPEC_HAND+FACTORY=cnt+PERSID=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine Benutzersuche oder öffentliche Rohantwort. [Hilfstest][aux]. |
+| Servicevertrag laden | GET | `pdmweb3.exe?…+OP=GET_SVC_CONTRACT+new_customer=cnt:<id>` | bestätigt | Interner Request nach Kontakt-ID über `Invoke-UHDAuxiliaryRequest`; keine öffentliche Antwortauswertung. [Hilfstest][aux]. |
+| Prioritätsberechnung | GET | `pdmweb3.exe?…+OP=GET_PRI_CAL+FACTORY=in` | bestätigt | Interner Request über `Invoke-UHDAuxiliaryRequest`; keine Prioritätsliste. [Hilfstest][aux]. |
+| Gruppenzuordnung | GET | `pdmweb3.exe?…+OP=GROUP_IN_AGT` / `AGT_IN_GROUP` | bestätigt | Interne Vorlagen für beide `OP`-Werte; keine Requests, da Argumente und Antwortformat offen sind. [Hilfstest][aux]. |
+| Anhang hochladen | POST multipart | `/CAisd/UploadServlet`, Formular `frmUpload`, Popup | aus JavaScript abgeleitet, Popup-URL nicht einzeln aufrufbar, zurückgestellt | Offen: kein vollständiger Multipart-Request; kein Upload. |
+| Kommentar | offen | offen | offen | Offen: kein belegter Request zum manuellen Anlegen. |
+| Abschluss | offen | offen | offen | Offen: kein belegter Abschluss mit Lösung. |
+| WSDL | GET | `pdmws.exe?WSDL` | **404**, nicht verfügbar | Nicht unterstützt; kein Request im Modul. |
 
 ## Hinweis zu Speicher-Requests
 Beim Speichern werden alle Formularfelder gesendet. Die URL ist 1,5 KB lang. Beschreibung und Personendaten stehen in der URL. Logs müssen maskieren.
+[session]: ../tests/Session.Tests.ps1
+[read]: ../tests/TicketRead.Tests.ps1
+[aux]: ../tests/TicketAuxiliary.Tests.ps1
+
+In der Analyse erwähnte Aktivitäten (`SEARCH FACTORY=alg`) sind kein vollständig belegter Request-Vertrag. Allgemeine Benutzer- und Gruppensuche sowie Kategorie-, Status- und Prioritätskataloge sind nicht umgesetzt.

@@ -7,8 +7,8 @@
 - Schreibende Requests nie automatisch wiederholen.
 - TLS-Prüfung nie deaktivieren.
 - Sitzungs-IDs und Kennwörter nie loggen. Logs über `ConvertTo-UHDMaskedUrl` führen.
-- Commits nur auf Anforderung erstellen. Branch `develop`, kein Merge nach `main`.
-- Commit-Nachrichten auf Englisch. Vor Commits Tests und PSScriptAnalyzer ausführen.
+- Nach jeder erfolgreichen Coding-Session die eigenen Änderungen committen und auf `origin/develop` pushen, sofern Tests und PSScriptAnalyzer bestanden sind. Bei fehlgeschlagenen oder nicht ausgeführten Prüfungen weder committen noch pushen.
+- Commit-Nachrichten auf Englisch. Branch `develop`, kein Merge nach `main`, kein Force-Push.
 
 ## Stil
 - PowerShell 7, Advanced Functions mit `[CmdletBinding()]`, Verb-Noun-Namen.

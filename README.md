@@ -1,75 +1,62 @@
 # UHDServiceDesk
 
-PowerShell-7-Modul für das Ticketsystem **UHD Service Desk** (in der Aufzeichnung als CA Service Desk Manager ausgewiesen). Ziel: Tickets abrufen, anlegen, ändern und abschließen.
+PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Status: Proof of Concept, Phase 2 begonnen.**
+**Stand: Phase 2, Proof of Concept 0.2.0.** Anmeldung, Ticketsuche, Detailabruf und Abmeldung wurden als zusammenhängender Ablauf offline mit synthetischen Antworten geprüft. Es gibt keine Live-Verifikation.
 
-| Bereich | Stand |
+| Cmdlet | Stand |
 |---|---|
-| Analyse der HAR-Aufzeichnungen | weitgehend abgeschlossen, siehe `docs/analysis.md` |
-| `Connect-UHD` / `Disconnect-UHD` | implementiert, **ungetestet** gegen das Live-System |
-| `Get-UHDTicket` und weitere Cmdlets | Platzhalter (`NotImplementedException`) |
-| Pester-Tests | geschrieben, **nicht ausgeführt** (pwsh in der Entwicklungsumgebung fehlt) |
+| `Connect-UHD`, `Disconnect-UHD` | Formularanmeldung und Sitzungsende; optionaler Menü-Logout |
+| `Find-UHDTicket -GroupMemberId` | Suche nach numerischen Gruppenmitglieds-IDs; nur erste Seite, kein Freitextfilter |
+| `Get-UHDTicket -Id` | Liest unterstützte Detailantworten zu einer internen numerischen Ticket-ID |
+| `Get-UHDStatus -Id -Status` | Liest einen Statusübergang, wenn die Antwort aus genau einem `CODE@Bezeichnung`-Eintrag besteht |
+| `Get-UHDTicket -Children`, `Get-UHDTicketAttachment` | Die dokumentierten Requests sind implementiert. Das Antwortformat ist offen; die Cmdlets melden einen Fehler statt einer leeren Liste. Kein Download. |
+| Änderung, Abschluss, Kommentar, Upload, Benutzer-/Gruppensuche und Kataloge | Nicht verfügbar. Insbesondere senden `New-UHDTicket` und `Set-UHDTicket` keine Requests. |
 
-## Voraussetzungen
+Die [Endpunktmatrix](docs/endpoints.md) unterscheidet zwischen getestetem Request-Aufbau, ausgewerteten Antwortformaten und offenen Protokolldetails. [Beispiele](examples/README.md) zeigen den Offline-Test und die öffentliche API.
 
-- PowerShell 7.0 oder neuer
-- Zugang zum Ticketsystem mit Benutzername und Kennwort (formularbasierte Anmeldung)
-- Pester 5 und PSScriptAnalyzer für Tests und statische Analyse
+## Voraussetzungen und Konfiguration
 
-## Verwendung (Stand Proof of Concept)
+PowerShell 7.0 oder neuer. Für Offline-Tests und statische Analyse müssen Pester 5 und PSScriptAnalyzer lokal verfügbar sein. Die Offline-Tests benötigen kein UHD-Konto.
 
-```powershell
-Import-Module ./src/UHDServiceDesk/UHDServiceDesk.psd1
+Für eine ausdrücklich freigegebene Verbindung eine lokale Konfiguration nach [config.example.json](config.example.json) anlegen. Das Modul sucht sie in dieser Reihenfolge:
 
-# Erster Aufruf: Login-Fenster, danach werden die Zugangsdaten gespeichert
-Connect-UHD -Verbose
-
-# Kennwort geändert: Zugangsdaten neu abfragen
-Connect-UHD -ResetCredential
-
-Disconnect-UHD
-```
-
-Die Cmdlets `Get-UHDTicket`, `Set-UHDTicket` usw. existieren als Platzhalter und werfen derzeit eine Ausnahme.
-
-## Konfiguration
-
-Pfad der Konfigurationsdatei, in dieser Reihenfolge:
-1. Parameter `-ConfigPath`
+1. `Connect-UHD -ConfigPath`
 2. Umgebungsvariable `UHD_CONFIG_PATH`
-3. `%APPDATA%\UHDServiceDesk\config.json`
-
-Vorlage: `config.example.json`. Relevante Schlüssel:
+3. `UHDServiceDesk/config.json` unter dem Anwendungsdatenordner des Benutzers (unter Windows: `%APPDATA%`)
 
 | Schlüssel | Bedeutung |
 |---|---|
-| `BaseUrl` | Basis-URL bis `/CAisd/`, muss `https://` sein |
-| `CredentialPath` | Ort der gespeicherten Zugangsdaten. Relativ zum Ordner der Konfigurationsdatei. Standard: `uhd.credential.xml` im selben Ordner |
-| `TimeoutSec` | Timeout pro Request in Sekunden, Standard 60 |
+| `BaseUrl` | HTTPS-Basis-URL bis `/CAisd/`, ohne Benutzerinformationen, Query oder Fragment |
+| `CredentialPath` | Absolut oder relativ zum Konfigurationsordner; Standard: `uhd.credential.xml` in diesem Ordner |
+| `TimeoutSec` | Timeout in Sekunden (5–600, Standard 60) |
 
-Die Konfigurationsdatei und die Credential-Datei werden nicht versioniert.
+Keine lokalen Konfigurationen, Credential-Dateien oder HAR-Dateien versionieren. Mit explizitem `-Credential` speichert das Modul keine Anmeldedaten; diese Variante wird insbesondere außerhalb von Windows empfohlen. Details: [Authentifizierung](docs/authentication.md).
 
-## Sicherheit
+## Offline prüfen
 
-- Keine Zugangsdaten, Session-IDs oder Tokens im Quellcode, in der Dokumentation oder in Commits.
-- HAR-Aufzeichnungen liegen in `captures/` und sind per `.gitignore` ausgeschlossen. Sie enthalten Klartext-Kennwörter.
-- TLS-Zertifikatsprüfung bleibt aktiv.
-- Logs maskieren SID und PIN über `ConvertTo-UHDMaskedUrl`.
-- Schreibende Requests werden nie automatisch wiederholt.
+Aus dem Repository-Root in einer PowerShell-7-Sitzung:
 
-## Projektstruktur
+```powershell
+Import-Module ./src/UHDServiceDesk/UHDServiceDesk.psd1 -Force
+Get-Command -Module UHDServiceDesk -CommandType Function
 
+$config = New-PesterConfiguration
+$config.Run.Path = './tests'
+$config.Run.Exit = $true
+Invoke-Pester -Configuration $config
 ```
-src/UHDServiceDesk/   Modul (psd1, psm1, Public/, Private/)
-docs/                 Analyse, Endpunkte, Authentifizierung, Architektur
-captures/             HAR-Dateien (nicht versioniert)
-examples/             Anwendungsbeispiele
-tests/                Pester-Tests
+
+Die Tests mocken die Serverantworten; ein zusätzlicher Test prüft eine Verbindungsverweigerung lokal über Loopback. Für die statische Analyse in einer separaten PowerShell-Sitzung:
+
+```powershell
+Invoke-ScriptAnalyzer -Path ./src/UHDServiceDesk -Recurse -ExcludeRule PSUseBOMForUnicodeEncodedFile
 ```
+
+Die ausgeschlossene Regel empfiehlt für Windows PowerShell einen BOM. Das Modul richtet sich an PowerShell 7; das Repository verwendet UTF-8 gemäß `.editorconfig`.
 
 ## Entwicklung
 
-- Branch: `develop`. Kein Merge nach `main` ohne Freigabe.
-- Commit-Nachrichten auf Englisch.
-- Vor jedem Commit: Pester und PSScriptAnalyzer ausführen.
+- [Architektur](docs/architecture.md) und [Analyse / offene Punkte](docs/analysis.md)
+- Keine Tests am Live-System ohne ausdrückliche Freigabe und vorgesehene Testtickets. TLS-Zertifikatsprüfung bleibt aktiv; Logs entfernen die ganze URL-Query.
+- Nach einer erfolgreichen Coding-Session mit bestandenen Pester- und PSScriptAnalyzer-Prüfungen die eigenen Änderungen mit englischer Commit-Nachricht committen und auf `origin/develop` pushen. Kein Merge nach `main`, kein Force-Push.
