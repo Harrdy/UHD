@@ -3,6 +3,10 @@
 Das Modul ruft nur den jeweiligen Listenendpunkt per GET auf. Es führt weder
 JavaScript aus noch folgt es Links oder lädt Anhänge herunter.
 
+Der Browser erzeugt beim Öffnen der Registerkarten für Untertickets und
+Anhänge eine FID pro Listenrequest. Das Modul und die Leseproben machen das
+ebenfalls; sie übernehmen die SID unverändert aus der bestehenden Sitzung.
+
 | Liste | Begleitparameter neben Sitzung, `OP=SEARCH` und `FACTORY` | Bestätigtes Ausgabeformat |
 |---|---|---|
 | Untertickets | `QBE.EQ.parent.id=<Ticket-ID>`, `KEEP.forInChildList=1` | Leere Trefferliste im Template `list_in.htmpl` |

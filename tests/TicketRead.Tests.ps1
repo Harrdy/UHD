@@ -103,11 +103,11 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             { Get-UHDTicketAttachment -Id 42 } | Should -Throw '*Antwortformat der Anhangliste*'
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=42+KEEP.forInChildList=1'
+                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=4321+OP=SEARCH+FACTORY=in+QBE.EQ.parent.id=42+KEEP.forInChildList=1'
             }
             Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter {
                 $Method -eq 'GET' -and $ReadOnly -and
-                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=913+OP=SEARCH+FACTORY=attmnt+HTMPL=list_attmnt_sd.htmpl+KEEP.ticketFac=cr+QBE.EQ.requests.cr.persistent_id=cr%3A42'
+                $RelativeUrl -eq 'pdmweb2.exe?SID=478+FID=4321+OP=SEARCH+FACTORY=attmnt+HTMPL=list_attmnt_sd.htmpl+KEEP.ticketFac=cr+QBE.EQ.requests.cr.persistent_id=cr%3A42'
             }
         }
 

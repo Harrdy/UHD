@@ -2,7 +2,7 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.4.0.** Das Modul liest Ticketsuche, Detailansicht, Aktivitäten und Statusübergänge in den belegten Formaten. Die skriptlose HTML-Request-Liste liefert weder interne Ticket- oder Gruppen-IDs noch Arbeitsgruppe (`Group`), Bearbeiter (`Assignee`) oder letzte Änderung (`LastModified`). Diese Felder bleiben dann leer. In der Browserliste wird der Änderungszeitpunkt in UTC ausgegeben. Die Auswertung wurde offline geprüft; nicht alle Live-Formate sind belegt.
+**Stand: Phase 2, Proof of Concept 0.4.1.** Das Modul liest Ticketsuche, Detailansicht, Aktivitäten und Statusübergänge in den belegten Formaten. Die skriptlose HTML-Request-Liste liefert weder interne Ticket- oder Gruppen-IDs noch Arbeitsgruppe (`Group`), Bearbeiter (`Assignee`) oder letzte Änderung (`LastModified`). Diese Felder bleiben dann leer. In der Browserliste wird der Änderungszeitpunkt in UTC ausgegeben. Die Auswertung wurde offline geprüft; nicht alle Live-Formate sind belegt.
 
 | Cmdlet | Stand |
 |---|---|

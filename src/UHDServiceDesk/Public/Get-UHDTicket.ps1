@@ -29,7 +29,8 @@ function Get-UHDTicket {
     else {
         [ordered]@{ OP = 'SHOW_DETAIL'; FACTORY = 'cr'; PERSID = "cr:${Id}" }
     }
-    $url = ConvertTo-UHDOperationUrl -Session $session -Query $query
+    $requestFid = if ($Children) { Get-UHDRequestFid } else { $session.FID }
+    $url = ConvertTo-UHDOperationUrl -Session $session -RequestFid $requestFid -Query $query
     $response = Invoke-UHDRequest -Session $session -Method GET -RelativeUrl $url -ReadOnly
     if ($Children) {
         return ConvertFrom-UHDEmptyList -Content ([string]$response.Content) -Factory in

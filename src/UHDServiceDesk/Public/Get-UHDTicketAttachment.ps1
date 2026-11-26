@@ -15,7 +15,7 @@ function Get-UHDTicketAttachment {
     )
 
     $session = Get-UHDSession
-    $url = ConvertTo-UHDOperationUrl -Session $session -Query ([ordered]@{
+    $url = ConvertTo-UHDOperationUrl -Session $session -RequestFid (Get-UHDRequestFid) -Query ([ordered]@{
         OP = 'SEARCH'
         FACTORY = 'attmnt'
         HTMPL = 'list_attmnt_sd.htmpl'

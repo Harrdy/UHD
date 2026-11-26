@@ -71,7 +71,8 @@ try {
             'Transitions' { Get-UHDAuxiliaryQuery -Operation VALID_TRANSITIONS -Id $Id -Status $CurrentStatus -TenantId $TicketTenant }
             'Activities' { [ordered]@{ OP = 'SEARCH'; FACTORY = 'alg'; 'QBE.EQ.call_req_id' = "cr:${Id}" } }
         }
-        $url = ConvertTo-UHDOperationUrl -Session $ProbeSession -Query $query
+        $requestFid = if ($ProbeCase -in 'Children', 'Attachments') { Get-UHDRequestFid } else { $ProbeSession.FID }
+        $url = ConvertTo-UHDOperationUrl -Session $ProbeSession -RequestFid $requestFid -Query $query
         Invoke-UHDRequest -Session $ProbeSession -Method GET -RelativeUrl $url -ReadOnly -RetryCount 0 -ErrorAction Stop -Verbose:$false -Debug:$false
     } $session $Case $TestTicketId $Status $TenantId
     $report = [pscustomobject]@{

@@ -18,6 +18,7 @@ Describe 'UHD-Leseprobenskript' {
         Mock Connect-UHD -ModuleName UHDServiceDesk { throw 'Keine automatische Anmeldung.' }
         Mock Disconnect-UHD -ModuleName UHDServiceDesk { throw 'Keine automatische Abmeldung.' }
         Mock Invoke-UHDWebRequest -ModuleName UHDServiceDesk { throw 'Netzwerkzugriff im Test verboten.' }
+        Mock Get-Random -ModuleName UHDServiceDesk { 0.4321 }
         Mock Invoke-UHDRequest -ModuleName UHDServiceDesk {
             [pscustomobject]@{
                 StatusCode = 200
@@ -56,6 +57,7 @@ Describe 'UHD-Leseprobenskript' {
         @{ Name = 'Activities'; Query = 'OP=SEARCH+FACTORY=alg+QBE.EQ.call_req_id=cr%3A42'; Arguments = @{} }
     ) {
         $params = $Arguments
+        $expectedFid = if ($Name -in 'Children', 'Attachments') { '4321' } else { '22' }
         $report = @(& $script:readProbePath -Case $Name -TestTicketId 42 -ApprovedLiveRead -Verbose @params 4>&1)
         $report.Count | Should -Be 1
         $report[0].Case | Should -BeExactly $Name
@@ -65,7 +67,7 @@ Describe 'UHD-Leseprobenskript' {
         Should -Invoke Invoke-UHDRequest -ModuleName UHDServiceDesk -Exactly 1
         Should -Invoke Invoke-UHDRequest -ModuleName UHDServiceDesk -Exactly 1 -ParameterFilter {
             $Method -eq 'GET' -and $ReadOnly -and -not $IsWrite -and $RetryCount -eq 0 -and
-            $RelativeUrl -ceq ('pdmweb.exe?SID=11+FID=22+' + $Query)
+            $RelativeUrl -ceq ('pdmweb.exe?SID=11+FID=' + $expectedFid + '+' + $Query)
         }
     }
 

@@ -33,7 +33,7 @@ function Find-UHDTicket {
 
     $session = Get-UHDSession
     # Wie beim Menüklick eine FID für diesen Suchaufruf erzeugen.
-    $requestFid = [int][math]::Round((Get-Random -Minimum 0.0 -Maximum 1.0) * 10000, [MidpointRounding]::AwayFromZero)
+    $requestFid = Get-UHDRequestFid
     $url = ConvertTo-UHDOperationUrl -Session $session -RequestFid $requestFid -Query ([ordered]@{
         OP = 'SEARCH'
         FACTORY = 'cr'
