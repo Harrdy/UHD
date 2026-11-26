@@ -1,0 +1,7 @@
+{
+  "BaseUrl": "https://<ticketsystem-host>/CAisd/",
+  "TimeoutSec": 60,
+  "RetryCount": 2,
+  "RetryDelaySec": 3,
+  "TlsVerify": true
+}

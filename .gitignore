@@ -1,0 +1,13 @@
+# Aufzeichnungen und Zugangsdaten niemals committen
+captures/*.har
+captures/**/*.har
+*.har
+config.json
+*.local.json
+*.credential
+*.clixml
+session*.json
+logs/
+*.log
+TestResults/
+.vscode/
