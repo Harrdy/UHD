@@ -52,6 +52,7 @@ function ConvertFrom-UHDHtmlSearch {
                 Customer = [System.Net.WebUtility]::HtmlDecode($row.Groups['Customer'].Value.Trim())
                 Parent = $null
                 GroupId = $null
+                LastModified = $null
             }
         }
     )

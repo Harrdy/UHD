@@ -1,6 +1,6 @@
 @{
     RootModule        = 'UHDServiceDesk.psm1'
-    ModuleVersion     = '0.3.3'
+    ModuleVersion     = '0.3.4'
     GUID              = 'd91e36eb-f5ab-46c3-a02d-96851d03638f'
     Author            = 'UHDServiceDesk contributors'
     Description       = 'PowerShell 7 Schnittstelle für das Ticketsystem UHD Service Desk (Proof of Concept).'

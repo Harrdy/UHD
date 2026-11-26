@@ -2,7 +2,7 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.3.3.** Die Ticketsuche liest sowohl das beobachtete Browserformat mit JavaScript-Daten als auch die skriptlose HTML-Request-Liste. Die HTML-Ansicht liefert keine internen Ticket- oder Gruppen-IDs; diese Felder bleiben dann leer. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Browserseiten 50, 30 und 31 Treffer. Beide Suchparser wurden mit synthetischen Daten offline geprüft; für den Detailparser bleibt es ebenfalls bei einer synthetischen Prüfung.
+**Stand: Phase 2, Proof of Concept 0.3.4.** Die Ticketsuche liest sowohl das beobachtete Browserformat mit JavaScript-Daten als auch die skriptlose HTML-Request-Liste. Die HTML-Ansicht liefert weder interne Ticket- oder Gruppen-IDs noch Arbeitsgruppe (`Group`), Bearbeiter (`Assignee`) oder letzte Änderung (`LastModified`). Diese Felder bleiben dann leer. In der Browserliste wird der Änderungszeitpunkt in UTC ausgegeben. Beide Suchparser sind offline geprüft; der Detailparser wurde nur mit synthetischen Daten geprüft.
 
 | Cmdlet | Stand |
 |---|---|

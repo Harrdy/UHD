@@ -16,7 +16,7 @@ function ConvertFrom-UHDCapturedSearch {
         Assignee = 'assignee'; Group = 'group'; Category = 'category'; Priority = 'priority'
         Urgency = 'urgency'; Impact = 'impact'; Customer = 'customer.combo_name'; Parent = 'parent'
     }
-    $allowed = @($fields.Values) + 'persid', 'group.id'
+    $allowed = @($fields.Values) + 'persid', 'group.id', 'last_mod_dt'
     # Kontext beachten: HTML-Kommentare und Script-ähnliche Daten in Attributen
     # oder Textfeldern sind keine Skriptblöcke.
     $attributes = '(?>[^>"'']|"[^"]*"|''[^'']*'')*'
@@ -38,7 +38,9 @@ function ConvertFrom-UHDCapturedSearch {
     $fieldPattern = [regex]('(?m)\GrecordData[ \t]*\[[ \t]*"(?<key>[A-Za-z0-9._-]+)"[ \t]*\][ \t]*=[ \t]*' +
         '(?<right>(?:' + $literal + ')|celldatatowrite|-?[0-9]+);[ \t]*(?=\r?$|//)')
     $endPattern = [regex]'\Grs\.addRow\(recordData\["rownum"\],[ \t]*recordData,[ \t]*styleData,[ \t]*imageData\);'
-    $parseHelper = [regex]('\G(?:rs\.data\([ \t]*' + $literalGroup +
+    $epochLiteral = '(?<epochQuote>["''])(?<epoch>[0-9]{1,10})\k<epochQuote>'
+    $parseHelper = [regex]('\G(?:rs\.data\(date_to_string\(' + $epochLiteral + '\)\)' +
+        '|rs\.data\([ \t]*' + $literalGroup +
         '[ \t]*\)|writeIcon\([ \t]*' + $literalGroup + '[ \t]*,[ \t]*ref_num_style[ \t]*\)' +
         '|colorPrios\([ \t]*' + $literalGroup + '[ \t]*\));')
     $directPattern = [regex]('\A' + $literalGroup + '\z')
@@ -82,6 +84,10 @@ function ConvertFrom-UHDCapturedSearch {
                 $ticket = [ordered]@{ Id = $id }
                 foreach ($property in $fields.Keys) { $ticket[$property] = $row[$fields[$property]] }
                 $ticket['GroupId'] = $row['group.id']
+                $ticket['LastModified'] = if ([long]$row['last_mod_dt'] -gt 0) {
+                    [DateTimeOffset]::FromUnixTimeSeconds([long]$row['last_mod_dt'])
+                }
+                else { $null }
                 $results.Add([pscustomobject]$ticket)
                 $row = $null
                 continue
@@ -91,25 +97,28 @@ function ConvertFrom-UHDCapturedSearch {
             $key = $assignment.Groups['key'].Value
             if ($key -cnotin $allowed) { $lastHelper = $null; continue }
             $right = $assignment.Groups['right'].Value
+            $isDate = $key -ceq 'last_mod_dt'
             if ($right -ceq 'celldatatowrite') {
                 if ($null -eq $lastHelper) { throw $unsupported }
                 $helper = $parseHelper.Match($scriptText, $lastHelper.Index)
                 $helperEnd = $helper.Index + $helper.Length
                 if (-not $helper.Success -or $helperEnd -gt $at -or
                     -not [string]::IsNullOrWhiteSpace($code.Substring($helperEnd, $at - $helperEnd))) { throw $unsupported }
-                $value = $helper.Groups['value'].Value
+                if ($helper.Groups['epoch'].Success -ne $isDate) { throw $unsupported }
+                $value = if ($isDate) { $helper.Groups['epoch'].Value } else { $helper.Groups['value'].Value }
             }
             else {
                 $direct = $directPattern.Match($right)
-                if (-not $direct.Success) { throw $unsupported }
+                if ($isDate -or -not $direct.Success) { throw $unsupported }
                 $value = $direct.Groups['value'].Value
             }
             $lastHelper = $null
-            $value = $value.Substring(1, $value.Length - 2)
-            # Unterstützt nur einfache JavaScript-String-Escapes; kein Eval
-            # und keine Umwandlung unbekannter Ausdrücke in vermeintliche Daten.
-            if (-not [regex]::IsMatch($value, '\A(?:[^\\]|\\["''\\/nrtbf])*\z')) { throw $unsupported }
-            $value = [regex]::Replace($value, '\\(.)', { param($escape) $escapes[$escape.Groups[1].Value] })
+            if (-not $isDate) {
+                $value = $value.Substring(1, $value.Length - 2)
+                # Nur einfache JavaScript-String-Escapes lesen; kein Eval.
+                if (-not [regex]::IsMatch($value, '\A(?:[^\\]|\\["''\\/nrtbf])*\z')) { throw $unsupported }
+                $value = [regex]::Replace($value, '\\(.)', { param($escape) $escapes[$escape.Groups[1].Value] })
+            }
             if ($key -ceq 'group.id' -and $value -and $value -notmatch '\A[0-9a-fA-F]{32}\z') { throw $unsupported }
             if ($row.ContainsKey($key) -and $row[$key] -cne $value) { throw $unsupported }
             $row[$key] = $value

@@ -19,8 +19,12 @@ rs.data("Gruppe Beispiel");
 recordData["group"] = celldatatowrite;
 rs.data("ABCDEF0123456789ABCDEF0123456789");
 recordData["group.id"] = celldatatowrite;
-rs.data("");
+rs.data("Testbearbeiter");
 recordData["assignee"] = celldatatowrite;
+rs.data(date_to_string('1234567890'));
+recordData["last_mod_dt"] = celldatatowrite;
+rs.data(date_to_string("1234567890"));
+recordData["last_mod_dt"] = celldatatowrite;
 colorPrios("3");
 recordData["priority"] = celldatatowrite;
 rs.addRow(recordData["rownum"], recordData, styleData, imageData);
@@ -36,7 +40,9 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             $results[0].Group | Should -BeExactly 'Gruppe Beispiel'
             $results[0].GroupId | Should -BeExactly 'ABCDEF0123456789ABCDEF0123456789'
             $results[0].Priority | Should -BeExactly '3'
-            $results[0].Assignee | Should -BeExactly ''
+            $results[0].Assignee | Should -BeExactly 'Testbearbeiter'
+            $results[0].LastModified | Should -Be ([DateTimeOffset]::FromUnixTimeSeconds(1234567890))
+            $results[0].LastModified.Offset | Should -Be ([TimeSpan]::Zero)
             $results[0].Description | Should -BeNullOrEmpty
             $results[0].PSObject.Properties.Name | Should -Not -Contain 'nicht-ausgeben'
         }
@@ -62,6 +68,7 @@ $script:rowFixture
             @{ Mode = 'veralteter Zellwert'; Old = 'recordData["priority"] ='; New = "otherCall();`nrecordData[`"priority`"] =" }
             @{ Mode = 'unbekannter Escape'; Old = 'noch Text'; New = 'noch \ZText' }
             @{ Mode = 'widersprüchliche Wiederholung'; Old = "rs.data('Beispiel"; New = "rs.data('Konflikt" }
+            @{ Mode = 'berechneter Zeitstempel'; Old = "date_to_string('1234567890')"; New = 'date_to_string(executeSynthetic())' }
         ) {
             $corrupt = $script:rowFixture.Replace($Old, $New).Replace('cr:42', 'cr:57')
             $emitted = [System.Collections.Generic.List[object]]::new()

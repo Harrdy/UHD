@@ -45,6 +45,8 @@ Die Mitgliedskennung steht im Filter `group_list.member` einer bestehenden Brows
 
 Die beobachtete Trefferliste beginnt jeden Treffer mit `recordData = new Object()`, enthält feldweise Zuweisungen und schließt ihn mit `rs.addRow(…)` ab. Die interne Ticket-ID ist im Feld `persid` als `cr:<ID>` belegt und wird als `Id` ausgegeben. Eine vorhandene Gruppenkennung aus `group.id` wird als `GroupId` ausgegeben, kann aber nicht als Suchfilter verwendet werden. Das Modul liest die Daten, ohne das Skript auszuführen. Eine aufgezeichnete Seite enthielt 50 Treffer; Folgeanfragen und Positivmerkmale für eine leere Antwort bleiben offen.
 
+Die Browserliste enthält außerdem `group` (Arbeitsgruppe), `assignee` (Bearbeiter) und `last_mod_dt` (letzte Änderung). Der Browser formatiert den letzten Wert aus Unix-Sekunden; das Modul gibt ihn als `LastModified` in UTC aus. In der skriptlosen Request-Liste fehlen alle drei Spalten.
+
 ## Hinweis zu Speicher-Requests
 Beim Speichern werden alle Formularfelder gesendet. Die URL ist 1,5 KB lang. Beschreibung und Personendaten stehen in der URL. Logs müssen maskieren.
 [session]: ../tests/Session.Tests.ps1

@@ -203,6 +203,9 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             $result[0].Summary | Should -BeExactly 'Probe <eins>'
             $result[0].Id | Should -BeNullOrEmpty
             $result[0].GroupId | Should -BeNullOrEmpty
+            $result[0].Group | Should -BeNullOrEmpty
+            $result[0].Assignee | Should -BeNullOrEmpty
+            $result[0].LastModified | Should -BeNullOrEmpty
             ($result | ConvertTo-Json) | Should -Not -Match 'SID=|FID=|OP=DTL'
             Should -Invoke Invoke-UHDRequest -Exactly 4
             Should -Invoke Invoke-UHDRequest -Exactly 0 -ParameterFilter { $RelativeUrl -like '*OP=PG*' -or $RelativeUrl -like '*OP=DTL*' }
