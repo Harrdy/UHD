@@ -3,36 +3,59 @@ function Connect-UHD {
     .SYNOPSIS
         Meldet sich am UHD Service Desk an und legt eine Sitzung im Modul ab.
     .DESCRIPTION
+        Werte kommen aus der Konfigurationsdatei (siehe Get-UHDConfig), sofern nicht
+        als Parameter angegeben. Fehlen gespeicherte Zugangsdaten, öffnet sich ein
+        Login-Fenster und die Daten werden für die nächsten Anmeldungen gespeichert.
+
         Ablauf laut Aufzeichnung cd241174-login.har (formularbasiert, keine Cookies):
         1. POST pdmweb3.exe mit USERNAME, PIN, OP=LOGIN
         2. Antwort enthält eine Weiterleitung mit SID und FID (OP=REPLACE_LOGIN)
         3. GET auf diese Weiterleitung, liefert ein Formular mit SID und FID
         4. POST mit OP=MENU und POST_MENU=1 öffnet das Hauptmenü
         STATUS: ungetestet gegen das Live-System. Die Parser basieren auf den Aufzeichnungen.
+    .PARAMETER ConfigPath
+        Pfad zur Konfigurationsdatei. Standard: Umgebungsvariable UHD_CONFIG_PATH oder %APPDATA%\UHDServiceDesk\config.json
     .PARAMETER BaseUrl
-        Basis-URL bis einschließlich /CAisd/, z. B. https://host/CAisd/
+        Überschreibt BaseUrl aus der Konfiguration, z. B. https://host/CAisd/
     .PARAMETER Credential
-        Anmeldedaten. Das Kennwort wird nur im Speicher gehalten und nie geloggt.
+        Explizite Zugangsdaten. Dann werden keine gespeicherten Daten verwendet und nichts gespeichert.
+    .PARAMETER ResetCredential
+        Ignoriert gespeicherte Zugangsdaten und fragt erneut per Login-Fenster ab, z. B. nach Kennwortänderung.
     .EXAMPLE
-        $cred = Get-Credential
-        Connect-UHD -BaseUrl 'https://host/CAisd/' -Credential $cred
+        Connect-UHD
+    .EXAMPLE
+        Connect-UHD -ResetCredential -Verbose
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
+        [string]$ConfigPath,
+
         [ValidatePattern('^https://')]
         [string]$BaseUrl,
 
-        [Parameter(Mandatory)]
         [pscredential]$Credential,
 
+        [switch]$ResetCredential,
+
         [ValidateRange(5, 600)]
-        [int]$TimeoutSec = 60
+        [int]$TimeoutSec
     )
 
     if ($script:UHDSession -and $script:UHDSession.IsConnected) {
         Write-Verbose 'Bestehende Sitzung wird wiederverwendet.'
         return $script:UHDSession
+    }
+
+    $cfg = Get-UHDConfig -ConfigPath $ConfigPath
+
+    if (-not $BaseUrl) { $BaseUrl = $cfg.BaseUrl }
+    if (-not $BaseUrl) { throw "Keine BaseUrl gesetzt. Bitte in $($cfg.ConfigPath) eintragen oder -BaseUrl angeben." }
+    if ($BaseUrl -notmatch '^https://') { throw 'BaseUrl muss mit https:// beginnen.' }
+    if (-not $PSBoundParameters.ContainsKey('TimeoutSec')) { $TimeoutSec = $cfg.TimeoutSec }
+
+    $usesStoredCredential = -not $PSBoundParameters.ContainsKey('Credential')
+    if ($usesStoredCredential) {
+        $Credential = Get-UHDStoredCredential -Path $cfg.CredentialPath -Reset:$ResetCredential
     }
 
     $session = [pscustomobject]@{
@@ -57,7 +80,8 @@ function Connect-UHD {
 
     # Schritt 2: Weiterleitung auf REPLACE_LOGIN auswerten
     if ($step1.Content -notmatch 'SID=(\d+)\+FID=(\d+)\+OP=REPLACE_LOGIN') {
-        throw 'Anmeldung fehlgeschlagen: keine Sitzungsweiterleitung erhalten. Zugangsdaten prüfen.'
+        $hint = if ($usesStoredCredential) { ' Falls sich das Kennwort geändert hat: Connect-UHD -ResetCredential.' } else { '' }
+        throw "Anmeldung fehlgeschlagen: keine Sitzungsweiterleitung erhalten. Zugangsdaten prüfen.$hint"
     }
     $session.SID = $Matches[1]
     $session.FID = $Matches[2]

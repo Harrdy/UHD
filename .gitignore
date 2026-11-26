@@ -11,3 +11,6 @@ logs/
 *.log
 TestResults/
 .vscode/
+# Gespeicherte Zugangsdaten (DPAPI-verschlüsselt, aber nie versionieren)
+*.credential.xml
+uhd.credential.xml
