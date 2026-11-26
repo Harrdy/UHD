@@ -66,6 +66,25 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 - Ein manuell angelegter Eintrag ist in keiner Aufzeichnung enthalten.
 - Der Statuscode `PF` entspricht vermutlich `Gelöst` (Zusammenhang: Speichern mit `SET.status=PF`, Aktivität „… in ‚Gelöst‘ geändert“). Vermutung, nicht bestätigt.
 
+## Statuscodes
+
+| Code | Bezeichnung | Status |
+|---|---|---|
+| `OP` | Offen | bestätigt (`crs:5200`) |
+| `WIP` | In Bearbeitung | bestätigt (`crs:5208`) |
+| `FWD` | Weitergeleitet | bestätigt (Dropdown-Label) |
+| `CB` | Rückfrage | bestätigt (Dropdown `crs:4454780`, Speichern mit `SET.status=CB`) |
+| `CL` | Geschlossen | bestätigt (`VALID_TRANSITIONS` ab `PF`: `CL@Geschlossen`) |
+| `PF` | Gelöst | Vermutung (Aktivität „Status … in ‚Gelöst‘ geändert“ nach `SET.status=PF`) |
+| `EXTERL` | extern erledigt | Vermutung über Ausschluss, Zuordnung zu `EXTABG` unsicher |
+| `EXTABG` | extern abgegeben | Vermutung über Ausschluss, Zuordnung zu `EXTERL` unsicher |
+
+Übergänge laut Aufzeichnungen:
+- Ab `WIP`: `EXTERL`, `EXTABG`, `CL`, `PF`, `FWD`, `CB`.
+- Ab `PF` (Gelöst): `CL`, `WIP`.
+
+Die Statusliste aus dem Client (6 Folgestatus aus In Bearbeitung) passt zur Anzahl der Codes.
+
 ## Offen
 
 | Punkt | Warum offen | Nächste Aufzeichnung |
