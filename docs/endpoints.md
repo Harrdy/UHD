@@ -1,6 +1,8 @@
 # Endpunkte
 
 Basis: `https://<host>/CAisd/`. Alle Requests sind GET, außer Login und Menü (POST).
+
+Hinweis: Der Servlet-Name variiert zwischen Aufzeichnungen (`pdmweb.exe`, `pdmweb2.exe`, `pdmweb3.exe`). Das Modul sollte den Namen aus der Anmeldung übernehmen und nicht fest verdrahten.
 Trennzeichen zwischen Parametern in Query-Strings ist meist `+` (CA-Format). Formularfelder werden mit `&` gesendet.
 
 | Zweck | Methode | Pfad und Parameter | Status |
@@ -23,7 +25,7 @@ Trennzeichen zwischen Parametern in Query-Strings ist meist `+` (CA-Format). For
 | Servicevertrag laden | GET | `pdmweb3.exe?…+OP=GET_SVC_CONTRACT+new_customer=cnt:<id>` | bestätigt |
 | Prioritätsberechnung | GET | `pdmweb3.exe?…+OP=GET_PRI_CAL+FACTORY=in` | bestätigt |
 | Gruppenzuordnung | GET | `pdmweb3.exe?…+OP=GROUP_IN_AGT` / `AGT_IN_GROUP` | bestätigt |
-| Anhang hochladen | POST multipart | `/CAisd/UploadServlet`, Formular `frmUpload`, iframe `IFUpload` | aus JavaScript abgeleitet, nicht aufgezeichnet |
+| Anhang hochladen | POST multipart | `/CAisd/UploadServlet`, Formular `frmUpload`, Popup | aus JavaScript abgeleitet, Popup-URL nicht einzeln aufrufbar, zurückgestellt |
 | Kommentar | offen | offen | offen |
 | Abschluss | offen | offen | offen |
 | WSDL | GET | `pdmws.exe?WSDL` | **404**, nicht verfügbar |

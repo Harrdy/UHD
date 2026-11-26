@@ -30,6 +30,9 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 - Verifikation: `SHOW_DETAIL` nach dem Speichern zeigt Status und Zusammenfassung korrekt.
 
 ### Ändern
+- Zweite Änderung (Aufzeichnung 40d31bdb): `SET.description` um `\n\nÄnderung 2` erweitert, `SET.urgency` und `SET.man_urg` von `1`/`-1` auf `2`, `SET.status` von `OP` auf `WIP`. Die Antwort enthält `Änderung 2`. Die Feldliste ist identisch zur ersten Änderung.
+- Kein Read-back per `SHOW_DETAIL` nach dem Speichern.
+- Servlet-Name in dieser Aufzeichnung: `pdmweb2.exe` (10 Requests), vorherige: `pdmweb3.exe`.
 - Öffnen: `OP=UPDATE&SET.id=<id>&SET.tenant=…` (ohne Änderung).
 - Speichern: `JEDIT=1&OP=UPDATE&SET.*` mit **dem kompletten Formular**. Unveränderte Felder werden mitgesendet.
 - Getestet: Beschreibung um `\n\nÄnderung 1` erweitert. Antwort enthält den neuen Text.
@@ -63,7 +66,7 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 | Kommentar hinzufügen | nicht aufgezeichnet | Kommentar intern und öffentlich |
 | Bearbeiterwechsel | nur Felder bekannt | Bearbeiter ändern + speichern |
 | Abschluss mit Lösung | nicht aufgezeichnet | Ticket abschließen |
-| Anhang-Upload als Multipart | Upload lief im iframe, nicht im HAR | Upload mit Entwicklertools (iframe einschließen) |
+| Anhang-Upload als Multipart | Upload läuft über ein Popup, das im Entwicklerwerkzeug nicht erscheint; die Popup-URL lässt sich nicht einzeln öffnen. Für den PoC nicht erforderlich | zurückgestellt |
 | Anhang abrufen (Download-URL) | nur Liste bekannt | Download eines Anhangs |
 | Fehlerfall Pflichtfeld fehlt | nicht aufgezeichnet | Speichern mit leerem Pflichtfeld |
 | Fehlerfall Berechtigung | nicht aufgezeichnet | Ticket einer fremden Gruppe öffnen |
@@ -71,7 +74,7 @@ Stand: 2026-11-26. Ausgewertet: 10 Aufzeichnungen (Login, Menü, Suche, Detail, 
 | URL-Länge | Testwert 1562 Zeichen funktioniert, IIS-Standard 2048 | Speichern mit sehr langer Beschreibung |
 | Sperre beim Bearbeiten | unklar, ob `SET.id`-Schritt sperrt | Parallel-Bearbeitung |
 | FID-Herkunft | Wert wiederholt sich im Formular, Quelle unklar | Vergleich mehrerer Formulare |
-| `pdmweb.exe` vs. `pdmweb3.exe` | zwei Servlet-Namen beobachtet | Logout über Menü in Session mit `pdmweb3` |
+| Servlet-Name `pdmweb`, `pdmweb2`, `pdmweb3` | drei Namen in den Aufzeichnungen beobachtet, Auslöser unklar | Vergleich gleicher Aktion in neuer Sitzung |
 | Benutzer- und Gruppensuche | nur Hilfsabfragen | Suche nach Benutzer |
 | Kategorie-, Status- und Prioritätslisten | nur Einzelwerte | Dropdown-Werte auslesen |
 
