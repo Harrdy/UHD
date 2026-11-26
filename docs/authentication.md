@@ -24,5 +24,11 @@
 - Bekannte Einschränkung: Ein fehlgeschlagener Login erzeugt dieselbe Meldung wie eine abgelaufene Sitzung. Ein Test mit falschem Kennwort ist offen.
 
 ## Zugangsdaten
-- Nur über `[pscredential]` übergeben. Kennwort wird nur für den Login-POST ausgelesen und danach aus dem Formular-Hashtable gelöscht.
-- Keine Speicherung im Repo oder im Modul.
+
+- Beim ersten Aufruf oder wenn die Credential-Datei fehlt, öffnet sich das Login-Fenster (`Get-Credential`).
+- Benutzername und Kennwort werden danach mit `Export-Clixml` in `CredentialPath` gespeichert.
+- Unter Windows ist die Datei mit DPAPI verschlüsselt. Sie ist nur für denselben Benutzer auf demselben Rechner lesbar.
+- Ein erneutes Login-Fenster erzwingt `Connect-UHD -ResetCredential`, z. B. nach Kennwortänderung.
+- Mit `-Credential` übergebene Daten werden nicht gespeichert.
+- Das Kennwort wird nur für den Login-POST in das Formular geschrieben. Ein Hashtable-`Clear()` entfernt nur den Eintrag. Der String selbst bleibt bis zur Garbage Collection im Speicher, das ist ein bekanntes Restrisiko von PowerShell.
+- Unter Nicht-Windows-Systemen warnt das Modul, weil der Schutz dort nicht ausreicht.

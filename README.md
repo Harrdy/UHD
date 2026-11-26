@@ -22,8 +22,11 @@ PowerShell-7-Modul für das Ticketsystem **UHD Service Desk** (in der Aufzeichnu
 ```powershell
 Import-Module ./src/UHDServiceDesk/UHDServiceDesk.psd1
 
-$cred = Get-Credential
-Connect-UHD -BaseUrl 'https://<ticketsystem-host>/CAisd/' -Credential $cred -Verbose
+# Erster Aufruf: Login-Fenster, danach werden die Zugangsdaten gespeichert
+Connect-UHD -Verbose
+
+# Kennwort geändert: Zugangsdaten neu abfragen
+Connect-UHD -ResetCredential
 
 Disconnect-UHD
 ```
@@ -32,7 +35,20 @@ Die Cmdlets `Get-UHDTicket`, `Set-UHDTicket` usw. existieren als Platzhalter und
 
 ## Konfiguration
 
-`config.example.json` zeigt die vorgesehenen Einstellungen (URL, Timeouts, Wiederholungen, TLS). Eine lokale `config.json` wird nicht versioniert. Die Konfiguration wird noch nicht ausgelesen. Die URL wird derzeit als Parameter übergeben.
+Pfad der Konfigurationsdatei, in dieser Reihenfolge:
+1. Parameter `-ConfigPath`
+2. Umgebungsvariable `UHD_CONFIG_PATH`
+3. `%APPDATA%\UHDServiceDesk\config.json`
+
+Vorlage: `config.example.json`. Relevante Schlüssel:
+
+| Schlüssel | Bedeutung |
+|---|---|
+| `BaseUrl` | Basis-URL bis `/CAisd/`, muss `https://` sein |
+| `CredentialPath` | Ort der gespeicherten Zugangsdaten. Relativ zum Ordner der Konfigurationsdatei. Standard: `uhd.credential.xml` im selben Ordner |
+| `TimeoutSec` | Timeout pro Request in Sekunden, Standard 60 |
+
+Die Konfigurationsdatei und die Credential-Datei werden nicht versioniert.
 
 ## Sicherheit
 
