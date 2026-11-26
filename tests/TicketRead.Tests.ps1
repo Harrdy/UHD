@@ -26,7 +26,7 @@ Describe 'UHD-Tickets lesen' {
                 [pscustomobject]@{ Content = 'OK' }
             } -ParameterFilter { $RelativeUrl -like '*ENDSESSION=1' }
             Mock Invoke-UHDRequest {
-                [pscustomobject]@{ Content = @'
+                [pscustomobject]@{ StatusCode = 200; Content = @'
 <html><script>
 recordData = new Object();
 recordData["persid"] = "cr:42";
@@ -148,12 +148,19 @@ rs.addRow(recordData["rownum"], recordData, styleData, imageData);
             Should -Invoke Invoke-UHDRequest -Exactly 0
         }
 
-        It 'meldet unbekanntes Antwortformat, statt eine leere Trefferliste auszugeben' {
+        It 'meldet unbekanntes Antwortformat und protokolliert nur feste Merkmale' {
             $null = Connect-UHD -ConfigPath $config -Credential $script:testCredential
-            Mock Invoke-UHDRequest { [pscustomobject]@{ Content = '<html><title>Ergebnis</title></html>' } } -ParameterFilter {
+            Mock Invoke-UHDRequest { [pscustomobject]@{ StatusCode = 200; Content = '<html><title>VERTRAULICHE-TESTMARKE</title><script>var recordData = [];</script></html>' } } -ParameterFilter {
                 $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*'
             }
-            { Find-UHDTicket -AllActiveIncidents } | Should -Throw '*Antwortformat*'
+            $messages = & {
+                try { Find-UHDTicket -AllActiveIncidents -Verbose }
+                catch { $_.Exception.Message }
+            } 4>&1
+            $messages -join ' ' | Should -Match 'UHD-Suchantwort: HTTP=200; Zeichen=\d+; HTML=True; Skript=True; recordData=True; addRow=False'
+            $messages -join ' ' | Should -Match 'Antwortformat'
+            $messages -join ' ' | Should -Not -Match 'VERTRAULICHE-TESTMARKE|SID=|FID='
+            Should -Invoke Invoke-UHDRequest -Exactly 1 -ParameterFilter { $RelativeUrl -like '*OP=SEARCH+FACTORY=cr+*' }
         }
 
         It 'erhält wörtliche Kommentar-, Script- und Style-Zeichen in Detailfeldern' {

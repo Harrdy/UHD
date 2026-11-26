@@ -2,7 +2,7 @@
 
 PowerShell-7-Modul für den UHD Service Desk (CA Service Desk Manager).
 
-**Stand: Phase 2, Proof of Concept 0.3.0.** Die Ticketsuche liest das beobachtete Browser-Antwortformat. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Anmeldung, Suche, Detailabruf und Abmeldung wurden außerdem als Ablauf mit synthetischen Antworten geprüft; für den Detailparser bleibt es bei dieser synthetischen Prüfung. Es gibt keine Live-Verifikation.
+**Stand: Phase 2, Proof of Concept 0.3.1.** Die Ticketsuche liest das beobachtete Browser-Antwortformat. Eine lokale Offline-Prüfung erkannte auf drei aufgezeichneten Seiten 50, 30 und 31 Treffer. Anmeldung, Suche, Detailabruf und Abmeldung wurden außerdem als Ablauf mit synthetischen Antworten geprüft; für den Detailparser bleibt es bei dieser synthetischen Prüfung. Die Live-Kompatibilität ist nicht bestätigt.
 
 | Cmdlet | Stand |
 |---|---|
@@ -37,6 +37,8 @@ Für eine ausdrücklich freigegebene Verbindung eine lokale Konfiguration nach [
 Keine lokalen Konfigurationen, Credential-Dateien oder HAR-Dateien versionieren. Mit explizitem `-Credential` speichert das Modul keine Anmeldedaten; diese Variante wird insbesondere außerhalb von Windows empfohlen. Details: [Authentifizierung](docs/authentication.md).
 
 ## Offline prüfen
+
+Bei einem unbekannten Antwortformat gibt `Find-UHDTicket -Verbose` eine Zeile `UHD-Suchantwort:` mit HTTP-Status, Textlänge und festen Formatmerkmalen aus. Nur diese Zeile für die Diagnose weitergeben, niemals den Antworttext, die vollständige Request-URL oder HAR-Dateien.
 
 Aus dem Repository-Root in einer PowerShell-7-Sitzung:
 
